@@ -9,7 +9,6 @@ import sqlalchemy as sa
 
 from sqlalchemy.orm import sessionmaker
 
-
 def get_sqlalchemy_engine(access_db_path):
     print("starting Alchemy")
     connection_string = (
