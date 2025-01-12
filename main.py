@@ -1,86 +1,115 @@
-import pyodbc as pyo
-from sqlalchemy import create_engine
-from sqlalchemy import create_engine,inspect
 
-from sqlalchemy.ext.automap import automap_base
+from tkinter import *
+from commands import *
+#import customtkinter as ctk
 
-import pandas as pd
-import sqlalchemy as sa
+from configparser import ConfigParser
+from tkinter import filedialog
+from db import *
 
-from sqlalchemy.orm import sessionmaker
+from tkinter import ttk
+from tkinter import messagebox
 
-def get_sqlalchemy_engine(access_db_path):
-    print("starting Alchemy")
-    connection_string = (
-        r"DRIVER={Microsoft Access Driver (*.mdb, *.accdb)};"
-        f"DBQ={access_db_path};"
-        r"ExtendedAnsiSQL=1;")
-    connection_url = sa.engine.URL.create(
-        "access+pyodbc",
-        query={"odbc_connect": connection_string}
-    )
-    print("connection_string:", connection_string)
-    print("connection_url:", connection_url)
-
-    engine = sa.create_engine(connection_url)
-    return engine
-
-def start_odbc(db_path):
-
-    print("starting PYODBC")
-    dbq_string = "DBQ={}".format(db_path)
-    driver_string = r"Driver={Microsoft Access Driver (*.mdb, *.accdb)};"
-    cnn_string = driver_string + dbq_string
-    print("accessdb:", cnn_string)
-    cnn = pyo.connect(cnn_string)
-    cursor = cnn.cursor()
-    tables_list = [t.table_name for t in cursor.tables(tableType='TABLE')]
-    print(tables_list)
-
-#start(r"C:\Users\babaz\OneDrive\Desktop\Solas\Database Updated 2024-V1m.accdb")
-
-access_db_path = r"C:\Users\babaz\OneDrive\Desktop\Solas\Database Updated 2024-V1m.accdb"
+import globals as glb
+from colors import *
+from classes import *
+from commands import *
 
 
-engine = get_sqlalchemy_engine(access_db_path)
+def set_table(table):
+    global content_dict
+    print("set_table:",table)
 
-inspector = inspect(engine)
-tables = inspector.get_table_names()
-print(tables)
+    #for item in content_frame.winfo_children():
+    #    item.destroy()
 
-#Base = sa.ext.declarative.declarative_base()
-#metadata.reflect(engine)
-
-
-#write df to db
-#df = pd.DataFrame([(1, "foo2"), (2, "bar")], columns=["id", "txt"])
-#df.to_sql("my_table", engine, index=False, if_exists="append")
-
-Base = automap_base()
-Base.prepare(engine, reflect=True)
-tables = Base.metadata.tables.keys()
-print("metadata tables:",tables)
+    content_dict[table].pack()
 
 
+def prompt_for_db():
+    global root
+    global content
+    global content_dict
+    global notebook
 
-# 3. Get the class corresponding to a specific table
-# Assuming you have a table named 'example_table'
-ClientIDTable = Base.classes.get('Client ID')
+    file_path  = filedialog.askopenfilename(filetypes=[("Access DB","*.accdb")])
+    if isinstance(file_path,str):
+        print("file_path:",file_path)
+        #try:
+        process_db(file_path)
+        root.geometry("1400x800")
 
-columns = ClientIDTable.__table__.columns
+        for x,table in enumerate(glb.tables_dict.keys()):
+            #Button(table_frame, text=table, command = lambda t=table:set_table(t)).grid(row=0, column=x, padx=10, pady=10)
+            tab = ttk.Frame(notebook)
+            notebook.add(tab,text = table)
+            tableui = TableUI(tab, table)
+            tableui.create_controls(glb.tables_dict[table], ["Client ID", "Project ID", "Primary"])
+            tableui.set_tree_columns(glb.tables_dict[table])
 
-# 6. Print the list of column names (fields)
-for column in columns:
-    print(column.name)
+            tableui.set_tree_df(glb.tables_dict[table])
+
+            if glb.USE_DF:
+                tableui.set_tree_body_df()
+            if glb.USE_PL:
+                tableui.set_tree_body_pl()
+
+            tableui.grid(row=0, column=0)
+            #content.pack()
+
+        #set_table("Project Data")
+        #set_table("Client ID")
 
 
 
-Session = sessionmaker(bind=engine)
-session = Session()
 
-# Query to verify
-results = session.query(ClientIDTable).all()
 
-for row in results:
-    print(vars(row))
+
+no_project_file = "No Project DB Specified"
+
+root = Tk()
+root.title('Access Forms')
+#root.iconbitmap('c:/gui/codemy.ico')
+
+root.geometry("500x100")
+
+
+
+#ctk.set_appearance_mode("System")
+#ctk.set_default_color_theme("blue")
+#ctk.set_appearance_mode("dark")
+#ctk.set_default_color_theme("dark-blue")
+
+#root = ctk.CTk()
+#root.geometry("500x200")
+#root.title("Access Forms")
+
+# Read our config file and get colors
+parser = ConfigParser()
+parser.read("accessforms.ini")
+
+color_init(parser)
+
+source_frame = LabelFrame(root,text = "Source",bg="blue")
+source_frame.pack(fill="x", expand=True, padx=20,pady=5)
+
+bt = Button(source_frame,text = "Open DB",command = prompt_for_db)
+bt.grid(row = 0,column = 0)
+file_path_project = Label(source_frame,text= glb.dev_path if glb.DEV else no_project_file)
+file_path_project.grid(row = 0, column = 1)
+
+#table_frame = LabelFrame(root,text = "Table")
+#table_frame.pack(fill="x", expand=True, padx=20,pady=5)
+
+notebook = ttk.Notebook(root)
+notebook.pack()
+
+
+#content_frame = Frame(root)
+#content_frame.pack(fill="x", expand=True, padx=20)
+
+
+
+root.mainloop()
+
 
