@@ -235,8 +235,22 @@ class TableUI(Frame):
 
         column_dtype = self.df[self.df.columns[column]].dtype
 
-        series = pd.Series([new_value])
+        print("convert_by_dtype;",column,column_dtype,new_value)
 
+        if column_dtype == "bool":
+            if new_value not in ['True','False','Yes','No']:
+                5/0
+
+            if new_value == 'False':
+                new_value = ''
+            if new_value == 'Yes':
+                new_value = 'True'
+            if new_value == 'No':
+                new_value = ''
+
+            print("its a bool")
+
+        series = pd.Series([new_value])
         converted_value = series.astype(column_dtype).iloc[0]
 
         #print("convert_by_dtype returns:",converted_value,type(converted_value))

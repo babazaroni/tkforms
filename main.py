@@ -6,6 +6,7 @@ from commands import *
 from configparser import ConfigParser
 from tkinter import filedialog
 from db import *
+#import ttkbootstrap as tb
 
 from tkinter import ttk
 from tkinter import messagebox
@@ -16,7 +17,7 @@ from classes import *
 from commands import *
 
 
-def set_table(table):
+def set_tablex(table):
     global content_dict
     print("set_table:",table)
 
@@ -91,6 +92,7 @@ def on_tab_changed(event):
 no_project_file = "No Project DB Specified"
 
 root = Tk()
+#root = tb.Window(themename="superhero")
 root.title('Access Forms')
 #root.iconbitmap('c:/gui/codemy.ico')
 
