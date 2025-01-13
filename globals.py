@@ -1,5 +1,5 @@
 #import pandas as pd
-import polars as pl
+#import polars as pl
 import platform
 
 # To create executable, run pyinstaller main.py --onefile --windowed
@@ -39,8 +39,8 @@ architects = None
 architect_rates = None
 #timesheet_df = pd.DataFrame()
 #financial_df = pd.DataFrame()
-timesheet_df = pl.DataFrame()
-financial_df = pl.DataFrame()
+#timesheet_df = pl.DataFrame()
+#financial_df = pl.DataFrame()
 tables_db = None
 tables_list = None
 table_selected = None
@@ -55,13 +55,7 @@ saved_primary_color = None
 saved_secondary_color = None
 saved_highlight_color = None
 
-dbgs_df = pl.DataFrame()
+#dbgs_df = pl.DataFrame()
 
 def global_clear():
-    global table_selected,tables_list,timesheet_df,financial_df,project_file
-    table_selected = None
-    tables_list = None
-    project_file = None
-    ref_iframe = None
-    timesheet_df = pl.DataFrame()
-    financial_df = pl.DataFrame()
+    pass

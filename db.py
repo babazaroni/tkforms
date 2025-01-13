@@ -1,5 +1,5 @@
 import globals as glb
-import polars as pl
+#import polars as pl
 
 import sqlalchemy as sa
 import pyodbc as pyo
@@ -75,6 +75,45 @@ def process_db(db_path):
                 glb.tables_dict[table_name] = pd.DataFrame(rows,columns=table.columns)
             if glb.USE_PL:
                 glb.tables_dict[table_name] = pl.DataFrame(rows,schema=table.columns,orient="row")
+
+    if glb.PYODBC:
+        print("starting PYODBC")
+        dbq_string = "DBQ={}".format(db_path)
+        driver_string = r"Driver={Microsoft Access Driver (*.mdb, *.accdb)};"
+        cnn_string = driver_string + dbq_string
+        print("accessdb:", cnn_string)
+        cnn = pyo.connect(cnn_string)
+        cursor = cnn.cursor()
+        glb.tables_list = [t.table_name for t in cursor.tables() if not t.table_name.startswith('MS') and len(t.table_name) < 30]
+
+        #print("process_db tables:",glb.tables_list)
+
+        glb.tables_dict = {}
+
+        for table_name in glb.tables_list:
+            #glb.project_df = create_df_sql("select * from [Project Data]",cnn,table_name)
+            df = pd.read_sql(f"select * from [{table_name}]", cnn)
+            #print("table schema:")
+            #print(df.dtypes)
+            glb.tables_dict[table_name] = df
+
+
+def create_df_sql(sql,conn,table_name):
+    cursor = conn.cursor()
+
+
+
+    cursor.execute(sql)
+    rows_tuples = cursor.fetchall()
+    rows = [list(t) for t in rows_tuples]
+
+    columns = [column[0] for column in cursor.description]
+
+    if glb.USE_DF:
+        glb.tables_dict[table_name] = pd.DataFrame(rows, columns=columns)
+    if glb.USE_PL:
+        glb.tables_dict[table_name] = pl.DataFrame(rows, schemacolumns, orient="row")
+
 
 def get_db_sqlalchemy(access_db_path):
     engine = get_sqlalchemy_engine(access_db_path)

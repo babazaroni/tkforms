@@ -3,6 +3,8 @@ from tkinter import ttk
 from commands import *
 from colors import *
 from custom import *
+import pandas as pd
+from tkinter import messagebox
 
 
 
@@ -35,6 +37,8 @@ class TableUI(Frame):
                                     #xscrollcommand=self.tree_scrollx.set,
                                     selectmode="extended")
 
+        #self.my_tree.grid(row = 0, column = 0)
+
         self.my_tree.bind("<ButtonRelease-1>", self.select_record)
         self.my_tree.bind("<Configure>", self.on_treeview_scroll)
 
@@ -54,6 +58,9 @@ class TableUI(Frame):
         self.records = []
         self.selected = 0
         self.df = None
+
+        print("------------------------------- setting req width -----------------------------")
+        self.reqwidth = 0
 
 
     def set_tree_columns(self,df):
@@ -93,6 +100,8 @@ class TableUI(Frame):
                 self.my_tree.insert(parent='', index='end', iid=count, text='',
                                     values=tp,
                                     tags=('oddrow',))
+
+        self.reqwidth = self.my_tree.winfo_reqwidth()
 
     def set_tree_df(self,df):
         self.df = df
@@ -221,6 +230,34 @@ class TableUI(Frame):
         if glb.USE_PL:
             self.set_tree_body_pl()
 
+    def convert_by_dtype(self,new_value,column):
+        #print("convert_by_dtype",self.df[self.df.columns[column]].dtype)
+
+        column_dtype = self.df[self.df.columns[column]].dtype
+
+        series = pd.Series([new_value])
+
+        converted_value = series.astype(column_dtype).iloc[0]
+
+        #print("convert_by_dtype returns:",converted_value,type(converted_value))
+
+        return converted_value
+
+    def get_converted_row_values(self):
+
+        order_map = get_order_map(self.table_name,self.df.columns)
+
+        row_vals = []
+
+        for order in order_map:
+            try:
+                cval = self.convert_by_dtype(self.records[order].get(), order)
+                row_vals.append(cval)
+            except:
+                messagebox.showinfo("Notification",f"Invalid format for {self.df.columns[order]}")
+                return None
+
+        return row_vals
 
     def add_record(self):
         if self.blank_check():
@@ -228,8 +265,15 @@ class TableUI(Frame):
 
         order_map = get_order_map(self.table_name,self.df.columns)
 
-        row_vals = [ self.records[order].get() for order in order_map]
-        print("add_record")
+        row_vals = self.get_converted_row_values()
+
+        if not row_vals:
+            return
+
+        try:
+            row_vals = [ self.convert_by_dtype(self.records[order].get(),order) for order in order_map]
+        except:
+            pass
 
         if glb.USE_DF:
             self.df.loc[len(self.df)] = row_vals
@@ -239,13 +283,16 @@ class TableUI(Frame):
         self.delete_and_replace()
 
 
+
+
     def update_record(self):
         if self.blank_check():
             return
 
-        order_map = get_order_map(self.table_name,self.df.columns)
+        row_vals = self.get_converted_row_values()
 
-        row_vals = [ self.records[order].get() for order in order_map]
+        if not row_vals:
+            return
 
         print("update_record",self.selected,type(self.selected))
 
