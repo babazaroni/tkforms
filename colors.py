@@ -80,6 +80,7 @@ def reset_colors():
               background=[('selected', '#347083')])
 
 def get_colors(parser):
+    return  (None,None,None)
     saved_primary_color = parser.get('colors', 'primary_color')
     saved_secondary_color = parser.get('colors', 'secondary_color')
     saved_highlight_color = parser.get('colors', 'highlight_color')

@@ -75,7 +75,7 @@ def get_selected_tab_widget():
         if width < 1000:
             width = 1000
 
-        root.geometry(f"{width+10}x800")
+        root.geometry(f"{width+30}x900")
 
     return widget_in_selected_tab
 
@@ -92,11 +92,14 @@ def on_tab_changed(event):
 no_project_file = "No Project DB Specified"
 
 root = Tk()
-#root = tb.Window(themename="superhero")
+#root = tb.Window(themename="united")  # darkly, flatly, journal, litera, minty, pulse, sandstone,simplex, superhero, cosmo, united
 root.title('Access Forms')
 #root.iconbitmap('c:/gui/codemy.ico')
 
-root.geometry("500x100")
+root.tk.call('tk', 'scaling', 2.0)  #Works with straight Tk()
+#root.option_add('*TButton.font', ('Arial', 24))
+root.option_add('*Font', ('Arial', 12, 'bold')) #works with straight Tk() only
+root.geometry("500x120")
 
 
 
@@ -130,6 +133,9 @@ notebook = ttk.Notebook(root)
 notebook.pack()
 
 notebook.bind("<<NotebookTabChanged>>", on_tab_changed)
+# Configure the font for Notebook tabs
+style = ttk.Style()
+style.configure('TNotebook.Tab', font=('Arial', 10, 'bold'))
 
 
 #content_frame = Frame(root)

@@ -5,7 +5,7 @@ from colors import *
 from custom import *
 import pandas as pd
 from tkinter import messagebox
-
+import ttkbootstrap as tb
 
 
 class TableUI(Frame):
@@ -33,9 +33,11 @@ class TableUI(Frame):
         #self.tree_scrollx.pack(side=BOTTOM, fill=Y)
 
         # Create The Treeview
-        self.my_tree = ttk.Treeview(self.tree_frame, yscrollcommand=self.tree_scrolly.set,
-                                    #xscrollcommand=self.tree_scrollx.set,
-                                    selectmode="extended")
+        #self.my_tree = ttk.Treeview(self.tree_frame, yscrollcommand=self.tree_scrolly.set,
+        #                            #xscrollcommand=self.tree_scrollx.set,
+        #                            selectmode="extended")
+
+        self.my_tree = tb.Treeview(self.tree_frame,style='info.Treeview')
 
         #self.my_tree.grid(row = 0, column = 0)
 
@@ -70,6 +72,8 @@ class TableUI(Frame):
 
         self.my_tree['columns'] = tuple(columns)
 
+        print(columns)
+
         self.my_tree.column("#0", width=0, stretch=NO)
         for heading in columns:
             self.my_tree.column(heading,anchor = W, width = 140)
@@ -88,7 +92,18 @@ class TableUI(Frame):
 
             row = self.df.iloc[count].tolist()
 
-            values = [row[o] for o in order_map]
+            values = []
+
+            for o in order_map:
+                entry = row[o]
+                print('addd:', self.df.columns[o], self.df[self.df.columns[o]].dtypes)
+                if 'datetime' in str(self.df[self.df.columns[o]].dtypes):
+                    entry = str(entry).split()[0]
+                    values.append(entry)
+                else:
+                    values.append(entry)
+
+            #values = [row[o] for o in order_map]
 
             tp = tuple(values)
 
@@ -111,9 +126,22 @@ class TableUI(Frame):
 
         order_map = get_order_map(self.table_name,self.df.columns)
 
+        dtypes = self.df.columns.d
+
         for row in self.df.iter_rows():
 
-            values = [row[o] for o in order_map]
+            values = []
+
+            for o in order_map:
+                entry = row[o]
+                print('addd:', self.df.columns[o], self.df.columns[o].dtypes)
+                if 'datetime' in str(self.df.columns[o].dtypes):
+                    entry = entry.split()[0]
+                    values.append(entry)
+                else:
+                    values.append(entry)
+
+            #Wvalues = [row[o] for o in order_map]
 
             tp = tuple(values)
 
@@ -159,14 +187,27 @@ class TableUI(Frame):
         order_map = get_order_map(self.table_name,table_df.columns)
         columns = [table_df.columns[x] for x in order_map]
 
+        # create record frame entries
         for x,column in enumerate(columns):
-
             fn_label = Label(self.record_frame, text=column)
             fn_label.grid(row=int(x/4), column=(2 * x) % 8, padx=10, pady=5)
+
+            dtype = table_df[column].dtype
+
+
             fn_entry = Entry(self.record_frame)
+            if 'datetime' in str(dtype):
+                dateformat = "%Y-%m-%d %H:%M:%S"
+                dateformat = "%Y-%m-%d"
+                fn_entry = tb.DateEntry(self.record_frame, bootstyle="dark",dateformat = dateformat)
+                fn_entry.entry.delete(0, END)
+                self.records.append(fn_entry.entry)
+            else:
+                self.records.append(fn_entry)
+
+
             fn_entry.grid(row=int(x/4), column=(2 * x) % 8 + 1, padx=10, pady=5)
 
-            self.records.append(fn_entry)
 
 
         self.update_button.grid(row=0, column=0, padx=10, pady=10)
@@ -203,6 +244,10 @@ class TableUI(Frame):
             return
 
         for record in self.records:
+
+            #if 'DateEntry' in str(type(record)):
+            #    record.entry.delete(0,END)
+            #else:
             record.delete(0,END)
 
         # Grab record Number
@@ -212,6 +257,9 @@ class TableUI(Frame):
         values = self.my_tree.item(self.selected, 'values')
 
         for i,record in enumerate(self.records):
+            #if 'DateEntry' in str(type(record)):
+            #    record.insert(0,values[i]) #xxx
+            #else:
             record.insert(0,values[i])
 
     def blank_check(self):
@@ -230,23 +278,23 @@ class TableUI(Frame):
         if glb.USE_PL:
             self.set_tree_body_pl()
 
-    def convert_by_dtype(self,new_value,column):
+    def convert_by_dtype(self,new_value:str,column):
         #print("convert_by_dtype",self.df[self.df.columns[column]].dtype)
 
         column_dtype = self.df[self.df.columns[column]].dtype
 
         print("convert_by_dtype;",column,column_dtype,new_value)
+        print("new value:",new_value,"dtype:",type(new_value))
 
         if column_dtype == "bool":
-            if new_value not in ['True','False','Yes','No']:
-                5/0
 
-            if new_value == 'False':
+            if new_value.lower() not in ['true','false','yes','no']:
+                5/0  # should do a real exception instead
+
+            if new_value.capitalize() in ['False','No']:
                 new_value = ''
-            if new_value == 'Yes':
+            else:
                 new_value = 'True'
-            if new_value == 'No':
-                new_value = ''
 
             print("its a bool")
 
@@ -261,12 +309,13 @@ class TableUI(Frame):
 
         order_map = get_order_map(self.table_name,self.df.columns)
 
-        row_vals = []
-
-        for order in order_map:
+        row_vals = [0] * len(self.records)
+        for record,order in zip(self.records,order_map):
             try:
-                cval = self.convert_by_dtype(self.records[order].get(), order)
-                row_vals.append(cval)
+                rval = record.entry.get() if 'DateEntryx' in str(type(record)) else record.get()
+
+                cval = self.convert_by_dtype(rval, order)
+                row_vals[order] = cval
             except:
                 messagebox.showinfo("Notification",f"Invalid format for {self.df.columns[order]}")
                 return None
