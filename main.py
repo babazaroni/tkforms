@@ -3,6 +3,8 @@ from tkinter import *
 from commands import *
 #import customtkinter as ctk
 
+from custom import *
+
 from configparser import ConfigParser
 from tkinter import filedialog
 from db import *
@@ -44,11 +46,9 @@ def prompt_for_db():
             #Button(table_frame, text=table, command = lambda t=table:set_table(t)).grid(row=0, column=x, padx=10, pady=10)
             tab = ttk.Frame(notebook)
             notebook.add(tab,text = table)
-            tableui = TableUI(tab, table)
-            tableui.create_controls(glb.tables_dict[table], ["Client ID", "Project ID", "Primary"])
-            tableui.set_tree_columns(glb.tables_dict[table])
-
-            tableui.set_tree_df(glb.tables_dict[table])
+            tableui = TableUI(tab, table,glb.tables_dict[table],custom.get(table,{}))
+            tableui.create_controls()
+            tableui.set_tree_columns()
 
             if glb.USE_DF:
                 tableui.set_tree_body_df()
@@ -56,6 +56,8 @@ def prompt_for_db():
                 tableui.set_tree_body_pl()
 
             tableui.grid(row=0, column=0,sticky = "w")
+
+            tableui.set_filters()
             #content.pack()
 
         #set_table("Project Data")
@@ -65,24 +67,39 @@ def prompt_for_db():
 def get_selected_tab_widget():
     # Get the ID of the selected tab
     selected_tab = notebook.select()
+    selected_index = notebook.index(notebook.select())
+
+    selected_tab_text = notebook.tab(selected_index, "text")
+
+    width = custom.get(selected_tab_text,{}).get('width',1000)
+
+    root.geometry(f"{width}x900")
 
     # Get the widget associated with the selected tab (it will be a frame)
-    widget_in_selected_tab = notebook.nametowidget(selected_tab)
 
+    widget_in_selected_tab = notebook.nametowidget(selected_tab)
+    max_width = 1000
     for child in widget_in_selected_tab.winfo_children():
         print(selected_tab,child.reqwidth)
         width = child.reqwidth
-        if width < 1000:
-            width = 1000
+        if width > max_width:
+            max_width = width
 
-        root.geometry(f"{width+30}x900")
+    print("------------------------------------- max_width ----------------------------------",max_width,selected_tab_text)
 
-    return widget_in_selected_tab
+
+    #    width = custom[selected_tab]['width']
+
+    #    root.geometry(f"{width+30}x900")
+
+    return widget_in_selected_tab,max_width
 
 
 def on_tab_changed(event):
     # Get the widget in the selected tab and print its type
-    widget_in_selected_tab = get_selected_tab_widget()
+    widget_in_selected_tab,max_width = get_selected_tab_widget()
+    max_width *= 1.0
+    #root.geometry(f"{int(max_width)}x900")
 
     print(f"Widget in selected tab: {widget_in_selected_tab} {widget_in_selected_tab.winfo_reqwidth()} ")
 

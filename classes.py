@@ -1,5 +1,7 @@
 from tkinter import *
 from tkinter import ttk
+from tkinter.ttk import Combobox
+
 from commands import *
 from colors import *
 from custom import *
@@ -9,10 +11,16 @@ import ttkbootstrap as tb
 
 
 class TableUI(Frame):
-    def __init__(self,parent,table_name):
+    def __init__(self,parent,table_name,df,custom_dict):
         super().__init__(parent,bg="yellow")
 
         self.table_name = table_name
+        self.df = df
+        self.custom = custom_dict
+
+        print("TableUI: custom:")
+        print(self.custom)
+
 
         self.filter_frame = LabelFrame(self,text = "Filter",bg = "red")
         self.filter_frame.pack(fill="x", expand=True, padx=20)
@@ -59,16 +67,16 @@ class TableUI(Frame):
 
         self.records = []
         self.selected = 0
-        self.df = None
+        self.filter_stack = []
+        self.filter_controls = []
 
-        print("------------------------------- setting req width -----------------------------")
         self.reqwidth = 0
 
 
-    def set_tree_columns(self,df):
-        order_map = get_order_map(self.table_name,df.columns)
+    def set_tree_columns(self):
+        order_map = get_order_map(self.table_name,self.df.columns)
 
-        columns = [df.columns[x] for x in order_map]
+        columns = [self.df.columns[x] for x in order_map]
 
         self.my_tree['columns'] = tuple(columns)
 
@@ -96,7 +104,7 @@ class TableUI(Frame):
 
             for o in order_map:
                 entry = row[o]
-                print('addd:', self.df.columns[o], self.df[self.df.columns[o]].dtypes)
+
                 if 'datetime' in str(self.df[self.df.columns[o]].dtypes):
                     entry = str(entry).split()[0]
                     values.append(entry)
@@ -118,8 +126,6 @@ class TableUI(Frame):
 
         self.reqwidth = self.my_tree.winfo_reqwidth()
 
-    def set_tree_df(self,df):
-        self.df = df
 
     def set_tree_body_pl(self):
         count = 0
@@ -134,7 +140,7 @@ class TableUI(Frame):
 
             for o in order_map:
                 entry = row[o]
-                print('addd:', self.df.columns[o], self.df.columns[o].dtypes)
+
                 if 'datetime' in str(self.df.columns[o].dtypes):
                     entry = entry.split()[0]
                     values.append(entry)
@@ -156,8 +162,21 @@ class TableUI(Frame):
             # increment counter
             count += 1
 
+    def set_filters(self):
+        print("set_filters:")
+        filters = self.custom.get("filters", [])
+        print("len:",len(filters),len(self.filter_controls))
+        for filter,control in zip(filters,self.filter_controls):
+            print("filter:",filter)
+            if filter not in self.filter_stack:
+                unique_entries = sorted(self.df[filter].unique())
+                print("unique:",unique_entries)
+                control['values'] = tuple(unique_entries)
 
-    def create_controls(self,table_df,filters):
+                pass
+
+
+    def create_controls(self):
         # Add Filter Boxes
 
         #fn_labelx = Label(filter_frame, text="First Name")
@@ -178,21 +197,25 @@ class TableUI(Frame):
         self.my_tree.tag_configure('oddrow', background=glb.saved_secondary_color)
         self.my_tree.tag_configure('evenrow', background=glb.saved_primary_color)
 
+        filters = self.custom.get("filters", [])
+
         for x,filter_name in enumerate(filters):
             fn_label = Label(self.filter_frame, text=filter_name)
             fn_label.grid(row=0, column=x, padx=5, pady=5)
-            fn_entry = Entry(self.filter_frame,justify=LEFT)
+            fn_entry = Combobox(self.filter_frame,justify=LEFT)
             fn_entry.grid(row=1, column=x, padx=5, pady=5)
 
-        order_map = get_order_map(self.table_name,table_df.columns)
-        columns = [table_df.columns[x] for x in order_map]
+            self.filter_controls.append(fn_entry)
+
+        order_map = get_order_map(self.table_name,self.df.columns)
+        columns = [self.df.columns[x] for x in order_map]
 
         # create record frame entries
         for x,column in enumerate(columns):
             fn_label = Label(self.record_frame, text=column)
             fn_label.grid(row=int(x/4), column=(2 * x) % 8, padx=10, pady=5)
 
-            dtype = table_df[column].dtype
+            dtype = self.df[column].dtype
 
 
             fn_entry = Entry(self.record_frame)
@@ -221,7 +244,7 @@ class TableUI(Frame):
 
     def on_treeview_scroll(self,event):
         scroll_position = self.my_tree.yview()
-        print("Treeview scrolled to position:", scroll_position)
+
 
     def get_first_displayed_row(self):
         min_scroll, max_scroll = self.my_tree.yview()
