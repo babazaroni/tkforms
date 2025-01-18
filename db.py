@@ -66,6 +66,11 @@ def process_db(db_path):
         for table_name in glb.tables_list:
 
             table = glb.db.get_table(table_name)
+
+            print("count of nans:")
+            print(table.isna().sum())
+            table.fillna('',inplace=True)
+
             print("--------------------------table--------------------------------: ",table_name)
             print(table)
             rows = [row for row in table]
@@ -84,7 +89,10 @@ def process_db(db_path):
         print("accessdb:", cnn_string)
         cnn = pyo.connect(cnn_string)
         cursor = cnn.cursor()
-        glb.tables_list = [t.table_name for t in cursor.tables() if not t.table_name.startswith('MS') and len(t.table_name) < 30]
+        for t in cursor.tables():
+            print("name:",t.table_name)
+            print("type:",t.table_type)
+        glb.tables_list = [t.table_name for t in cursor.tables() if t.table_type == 'TABLE']
 
         #print("process_db tables:",glb.tables_list)
 
@@ -93,9 +101,14 @@ def process_db(db_path):
         for table_name in glb.tables_list:
             #glb.project_df = create_df_sql("select * from [Project Data]",cnn,table_name)
             df = pd.read_sql(f"select * from [{table_name}]", cnn)
+            print("count of nans:")
+            print(df.isna().sum())
+            df.fillna('',inplace=True)
             #print("table schema:")
             #print(df.dtypes)
             glb.tables_dict[table_name] = df
+
+
 
 
 def create_df_sql(sql,conn,table_name):

@@ -2,8 +2,8 @@
 
 
 custom = {"Project Data":
-              { "order": ["Client ID","Project ID","Project Title"],
-                "filters": ["Client ID", "Project ID", "Project Title"],
+              { "order": ["Client ID","Project ID","Project Title","Solas Primary"],
+                "filters": ["Client ID", "Project ID", "Project Title","Solas Primary"],
                 "width": 2200
                },
           "Client ID":

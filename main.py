@@ -49,7 +49,8 @@ def prompt_for_db():
             tableui = TableUI(tab, table,glb.tables_dict[table],custom.get(table,{}))
             tableui.create_controls()
             tableui.set_tree_columns()
-
+            tableui.set_filters()
+            tableui.create_filtered_df()
             if glb.USE_DF:
                 tableui.set_tree_body_df()
             if glb.USE_PL:
@@ -57,7 +58,8 @@ def prompt_for_db():
 
             tableui.grid(row=0, column=0,sticky = "w")
 
-            tableui.set_filters()
+
+
             #content.pack()
 
         #set_table("Project Data")

@@ -66,11 +66,11 @@ class TableUI(Frame):
         self.select_record_button = Button(self.button_frame, text="Clear Record", command=self.clear_entries)
 
         self.records = []
-        self.selected = 0
         self.filter_stack = []
         self.filter_controls = []
 
         self.reqwidth = 0
+        self.filtered_df = df.copy()
 
 
     def set_tree_columns(self):
@@ -94,19 +94,24 @@ class TableUI(Frame):
 
     def set_tree_body_df(self):
 
-        order_map = get_order_map(self.table_name, self.df.columns)
+        for item in self.my_tree.get_children():
+            self.my_tree.delete(item)
 
-        for count in range(0, len(self.df)):
+        order_map = get_order_map(self.table_name, self.filtered_df.columns)
 
-            row = self.df.iloc[count].tolist()
+        for count in range(0, len(self.filtered_df)):
+
+            row = self.filtered_df.iloc[count].tolist()
 
             values = []
 
             for o in order_map:
                 entry = row[o]
 
-                if 'datetime' in str(self.df[self.df.columns[o]].dtypes):
+                if 'datetime' in str(self.filtered_df[self.filtered_df.columns[o]].dtypes):
                     entry = str(entry).split()[0]
+                    if entry == "NaT":
+                        entry = ""
                     values.append(entry)
                 else:
                     values.append(entry)
@@ -162,18 +167,58 @@ class TableUI(Frame):
             # increment counter
             count += 1
 
+    def control_in_filter_stack(self,control):
+        for stack_control,name in self.filter_stack:
+            if control == stack_control:
+                return True
+        return False
+
     def set_filters(self):
         print("set_filters:")
         filters = self.custom.get("filters", [])
         print("len:",len(filters),len(self.filter_controls))
         for filter,control in zip(filters,self.filter_controls):
             print("filter:",filter)
-            if filter not in self.filter_stack:
-                unique_entries = sorted(self.df[filter].unique())
+            if not self.control_in_filter_stack(control):
+                print("set_filters:",filter)
+                print("set_filters",self.filtered_df[filter])
+                unique_entries = sorted(self.filtered_df[filter].unique())
                 print("unique:",unique_entries)
                 control['values'] = tuple(unique_entries)
 
-                pass
+    def create_filtered_df(self):
+        print("create_filtered_df")
+        self.filtered_df = self.df.copy()
+        print("create_filtered_df start:",len(self.filtered_df))
+
+
+        for control,name in self.filter_stack:
+            print("filter:",name,control.get(),self.filtered_df[name].dtype,type(control.get()))
+            converted_value = self.convert_by_dtype(control.get(),self.df[name].dtype)
+            self.filtered_df = self.filtered_df[(self.filtered_df[name] == converted_value)]
+            print("filter_df",len(self.filtered_df))
+
+        print("create_filtered_df end:",len(self.filtered_df))
+
+    def combobox_changed(self,event,control,filter_name):
+        print("combo_changed")
+
+        try:
+            index = self.filter_stack.index((control,filter_name))
+            while index + 1 < len(self.filter_stack):
+                last,name = self.filter_stack.pop()
+                print("popping",last,name)
+                last.set("")
+        except:
+            self.filter_stack.append((control,filter_name))
+
+        self.create_filtered_df()
+        self.set_filters()
+
+        if glb.USE_DF:
+            self.set_tree_body_df()
+        if glb.USE_PL:
+            self.set_tree_body_pl()
 
 
     def create_controls(self):
@@ -204,8 +249,17 @@ class TableUI(Frame):
             fn_label.grid(row=0, column=x, padx=5, pady=5)
             fn_entry = Combobox(self.filter_frame,justify=LEFT)
             fn_entry.grid(row=1, column=x, padx=5, pady=5)
+            fn_entry.bind("<<ComboboxSelected>>",
+                lambda event, combobox_instance=fn_entry,filter_name = filter_name: self.combobox_changed(event,combobox_instance,filter_name))
 
             self.filter_controls.append(fn_entry)
+
+        if len(self.filter_controls):
+            bt = Button(self.filter_frame,text = "Clear",command = self.clear_filters)
+            bt.grid(row=1,column=len(self.filter_controls),padx=5,pady=5)
+            bt = Button(self.filter_frame,text = "Debug",command  = self.debug )
+            bt.grid(row=1,column = len(self.filter_controls)+1,padx=5,pady=5)
+
 
         order_map = get_order_map(self.table_name,self.df.columns)
         columns = [self.df.columns[x] for x in order_map]
@@ -242,6 +296,15 @@ class TableUI(Frame):
         # Add Record Entry Boxes
         pass
 
+    def clear_filters(self):
+        print("clear_filters")
+        self.filter_stack = []
+        for control in self.filter_controls:
+            control.set("")
+        self.filtered_df = self.df.copy()
+        self.set_filters()
+        self.delete_and_replace()
+
     def on_treeview_scroll(self,event):
         scroll_position = self.my_tree.yview()
 
@@ -274,10 +337,9 @@ class TableUI(Frame):
             record.delete(0,END)
 
         # Grab record Number
-        self.selected = int(self.my_tree.focus())
-        print("selected:",self.selected)
+        print("selected:",self.tree_focus())
         # Grab record values
-        values = self.my_tree.item(self.selected, 'values')
+        values = self.my_tree.item(self.tree_focus(), 'values')
 
         for i,record in enumerate(self.records):
             #if 'DateEntry' in str(type(record)):
@@ -301,12 +363,12 @@ class TableUI(Frame):
         if glb.USE_PL:
             self.set_tree_body_pl()
 
-    def convert_by_dtype(self,new_value:str,column):
+    def convert_by_dtype(self,new_value:str,column_dtype):
         #print("convert_by_dtype",self.df[self.df.columns[column]].dtype)
 
-        column_dtype = self.df[self.df.columns[column]].dtype
+        #column_dtype = self.df[self.df.columns[column]].dtype
 
-        print("convert_by_dtype;",column,column_dtype,new_value)
+        print("convert_by_dtype;",column_dtype,new_value)
         print("new value:",new_value,"dtype:",type(new_value))
 
         if column_dtype == "bool":
@@ -322,6 +384,7 @@ class TableUI(Frame):
             print("its a bool")
 
         series = pd.Series([new_value])
+        print("convert by dtype:",new_value,column_dtype)
         converted_value = series.astype(column_dtype).iloc[0]
 
         #print("convert_by_dtype returns:",converted_value,type(converted_value))
@@ -337,7 +400,7 @@ class TableUI(Frame):
             try:
                 rval = record.entry.get() if 'DateEntryx' in str(type(record)) else record.get()
 
-                cval = self.convert_by_dtype(rval, order)
+                cval = self.convert_by_dtype(rval, self.df[self.df.columns[order]].dtype)
                 row_vals[order] = cval
             except:
                 messagebox.showinfo("Notification",f"Invalid format for {self.df.columns[order]}")
@@ -357,7 +420,7 @@ class TableUI(Frame):
             return
 
         try:
-            row_vals = [ self.convert_by_dtype(self.records[order].get(),order) for order in order_map]
+            row_vals = [ self.convert_by_dtype(self.records[order].get(),self.df[order].dtype) for order in order_map]
         except:
             pass
 
@@ -375,15 +438,20 @@ class TableUI(Frame):
         if self.blank_check():
             return
 
+        selected = self.tree_focus()
+        if not selected:
+            messagebox.showinfo("Notification", "No entry selected")
+            return
+
         row_vals = self.get_converted_row_values()
 
         if not row_vals:
             return
 
-        print("update_record",self.selected,type(self.selected))
+        print("update_record",selected)
 
         if glb.USE_DF:
-            self.df.iloc[self.selected] = row_vals
+            self.df.iloc[selected] = row_vals
         if glb.USE_PL:
             pass
 
@@ -398,7 +466,13 @@ class TableUI(Frame):
         if self.blank_check():
             return
 
-        self.df.drop(self.selected,inplace=True)
+        selected = self.tree_focus()
+        if not selected:
+            messagebox.showinfo("Notification", "No entry selected")
+            return
+
+
+        self.filtered_df.drop(selected,inplace=True)
 
         self.delete_and_replace()
         print("remove_one")
@@ -407,5 +481,16 @@ class TableUI(Frame):
         print("clear_entries")
         for record in self.records:
             record.delete(0,END)
+
+    def debug(self):
+        print("focus:",self.tree_focus(),type(self.tree_focus()))
+        pass
+
+    def tree_focus(self):
+        focus = self.my_tree.focus()
+        print("len tree_focus",len(focus))
+        if focus == "":
+            return None
+        return int(focus)
 
 
