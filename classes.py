@@ -9,6 +9,24 @@ import pandas as pd
 from tkinter import messagebox
 import ttkbootstrap as tb
 
+def get_order_map(table,keys):
+    old_map = [i for i in range(len(keys))]
+    try:
+        order = custom[table]["order"]
+        new_map = []
+        columns = list(keys)
+        for field in order:
+            index = columns.index(field)
+            new_map.append(index)
+            old_map.remove(index)
+        new_map.extend(old_map)
+        #print("get_order_map:",table,new_map)
+        return new_map
+    except:
+        print("---------- get order map error --------",table)
+        return old_map
+
+
 
 class TableUI(Frame):
     def __init__(self,parent,table_name,df,custom_dict):
@@ -17,6 +35,7 @@ class TableUI(Frame):
         self.table_name = table_name
         self.df = df
         self.custom = custom_dict
+        self.filters = self.custom.get("filters", [])
 
         print("TableUI: custom:")
         print(self.custom)
@@ -67,7 +86,7 @@ class TableUI(Frame):
 
         self.records = []
         self.filter_stack = []
-        self.filter_controls = []
+        #self.filter_controls = []
 
         self.reqwidth = 0
         self.filtered_df = df.copy()
@@ -175,16 +194,15 @@ class TableUI(Frame):
 
     def set_filters(self):
         print("set_filters:")
-        filters = self.custom.get("filters", [])
-        print("len:",len(filters),len(self.filter_controls))
-        for filter,control in zip(filters,self.filter_controls):
+        print("len:",len(self.filters),len(self.filters))
+        for filter in self.filters:
             print("filter:",filter)
-            if not self.control_in_filter_stack(control):
+            if not self.control_in_filter_stack(filter.control):
                 print("set_filters:",filter)
-                print("set_filters",self.filtered_df[filter])
-                unique_entries = sorted(self.filtered_df[filter].unique())
+                print("set_filters",self.filtered_df[filter.field])
+                unique_entries = sorted(self.filtered_df[filter.field].unique())
                 print("unique:",unique_entries)
-                control['values'] = tuple(unique_entries)
+                filter.control['values'] = tuple(unique_entries)
 
     def create_filtered_df(self):
         print("create_filtered_df")
@@ -242,23 +260,25 @@ class TableUI(Frame):
         self.my_tree.tag_configure('oddrow', background=glb.saved_secondary_color)
         self.my_tree.tag_configure('evenrow', background=glb.saved_primary_color)
 
-        filters = self.custom.get("filters", [])
+        #filters = self.custom.get("filters", [])
 
-        for x,filter_name in enumerate(filters):
-            fn_label = Label(self.filter_frame, text=filter_name)
+        for x,filter in enumerate(self.filters):
+            fn_label = Label(self.filter_frame, text=filter.field)
             fn_label.grid(row=0, column=x, padx=5, pady=5)
             fn_entry = Combobox(self.filter_frame,justify=LEFT)
             fn_entry.grid(row=1, column=x, padx=5, pady=5)
             fn_entry.bind("<<ComboboxSelected>>",
-                lambda event, combobox_instance=fn_entry,filter_name = filter_name: self.combobox_changed(event,combobox_instance,filter_name))
+                lambda event, combobox_instance=fn_entry,filter_name = filter.field: self.combobox_changed(event,combobox_instance,filter_name))
+            filter.set_control(fn_entry)
 
-            self.filter_controls.append(fn_entry)
+            #self.filter_controls.append(filter)
 
-        if len(self.filter_controls):
+        #if len(self.filter_controls):
+        if len(self.filters):
             bt = Button(self.filter_frame,text = "Clear",command = self.clear_filters)
-            bt.grid(row=1,column=len(self.filter_controls),padx=5,pady=5)
+            bt.grid(row=1,column=len(self.filters),padx=5,pady=5)
             bt = Button(self.filter_frame,text = "Debug",command  = self.debug )
-            bt.grid(row=1,column = len(self.filter_controls)+1,padx=5,pady=5)
+            bt.grid(row=1,column = len(self.filters)+1,padx=5,pady=5)
 
 
         order_map = get_order_map(self.table_name,self.df.columns)
@@ -494,3 +514,8 @@ class TableUI(Frame):
         return int(focus)
 
 
+class ComboBoxC():
+    def __init__(self,field):
+        self.field = field
+    def set_control(self,control):
+        self.control = control
