@@ -8,7 +8,7 @@ from custom import *
 from configparser import ConfigParser
 from tkinter import filedialog
 from db import *
-#import ttkbootstrap as tb
+import ttkbootstrap as tb
 
 from tkinter import ttk
 from tkinter import messagebox
@@ -75,7 +75,7 @@ def get_selected_tab_widget():
 
     width = custom.get(selected_tab_text,{}).get('width',1000)
 
-    root.geometry(f"{width}x900")
+    root.geometry(f"{width}x960")
 
     # Get the widget associated with the selected tab (it will be a frame)
 
@@ -110,15 +110,15 @@ def on_tab_changed(event):
 
 no_project_file = "No Project DB Specified"
 
-root = Tk()
-#root = tb.Window(themename="united")  # darkly, flatly, journal, litera, minty, pulse, sandstone,simplex, superhero, cosmo, united
+#root = Tk()
+root = tb.Window(themename="united")  # darkly, flatly, journal, litera, minty, pulse, sandstone,simplex, superhero, cosmo, united
 root.title('Access Forms')
 #root.iconbitmap('c:/gui/codemy.ico')
 
 root.tk.call('tk', 'scaling', 2.0)  #Works with straight Tk()
 #root.option_add('*TButton.font', ('Arial', 24))
 root.option_add('*Font', ('Arial', 12, 'bold')) #works with straight Tk() only
-root.geometry("500x120")
+root.geometry("500x140")
 
 
 

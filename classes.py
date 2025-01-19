@@ -35,19 +35,23 @@ class TableUI(Frame):
         self.table_name = table_name
         self.df = df
         self.custom = custom_dict
-        self.filters = self.custom.get("filters", [])
+        self.filters = self.custom.get("filter", [])
+        self.sorters = self.custom.get("sort", [])
 
         print("TableUI: custom:")
         print(self.custom)
 
-
-        self.filter_frame = LabelFrame(self,text = "Filter",bg = "red")
-        self.filter_frame.pack(fill="x", expand=True, padx=20)
+        self.filtersort_frame = Frame(self)
+        self.filtersort_frame.pack(pady=10)
+        self.filter_frame = LabelFrame(self.filtersort_frame,text = "Filter",bg = "red")
+        self.filter_frame.grid(row=0,column = 0,padx=5,pady=5)
+        self.sort_frame = LabelFrame(self.filtersort_frame,text = "Sort",bg = "red")
+        self.sort_frame.grid(row = 0,column = 1,padx=5,pady=5)
 
         self.tree_frame = LabelFrame(self,text = table_name,bg = "green")
         self.tree_frame.pack(pady=10)
 
-        self.record_frame = LabelFrame(self, text = "Record")
+        self.record_frame = LabelFrame(self, text = "Entry")
         self.record_frame.pack(fill="x", expand=True, padx=20)
 
         self.button_frame = LabelFrame(self, text = "Commands")
@@ -204,6 +208,13 @@ class TableUI(Frame):
                 print("unique:",unique_entries)
                 filter.control['values'] = tuple(unique_entries)
 
+    def sort_filtered_df(self):
+        for x,sorter in enumerate(self.sorters):
+            print("sort_filtered_df:",sorter.ivar.get())
+            if sorter.ivar.get():
+                self.filtered_df = self.filtered_df.sort_values(by=sorter.field)
+
+
     def create_filtered_df(self):
         print("create_filtered_df")
         self.filtered_df = self.df.copy()
@@ -215,6 +226,8 @@ class TableUI(Frame):
             converted_value = self.convert_by_dtype(control.get(),self.df[name].dtype)
             self.filtered_df = self.filtered_df[(self.filtered_df[name] == converted_value)]
             print("filter_df",len(self.filtered_df))
+
+        self.sort_filtered_df()
 
         print("create_filtered_df end:",len(self.filtered_df))
 
@@ -271,14 +284,31 @@ class TableUI(Frame):
                 lambda event, combobox_instance=fn_entry,filter_name = filter.field: self.combobox_changed(event,combobox_instance,filter_name))
             filter.set_control(fn_entry)
 
-            #self.filter_controls.append(filter)
+        cnum = len(self.filters)
+
+        self.toggle_vars = []
+
+        for x,sorter in enumerate(self.sorters):
+            ivar = IntVar()
+            self.toggle_vars.append(ivar)
+            sorter.set_ivar(ivar)
+
+            fn_label = Label(self.sort_frame, text=sorter.field)
+            fn_label.grid(row=0, column=x, padx=5, pady=5)
+            fn_check = tb.Checkbutton(self.sort_frame,variable=self.toggle_vars[-1],onvalue=1,offvalue= 0)
+            sorter.set_control(fn_check)
+            fn_check.bind("<Button-1>",
+                lambda event, checkbox_instance=fn_check,sort_name = sorter.field: self.sorter_changed(event,checkbox_instance,sort_name))
+            fn_check.grid(row=1,column = x)
+
+        cnum += len(self.sorters)
 
         #if len(self.filter_controls):
         if len(self.filters):
             bt = Button(self.filter_frame,text = "Clear",command = self.clear_filters)
-            bt.grid(row=1,column=len(self.filters),padx=5,pady=5)
+            bt.grid(row=1,column=cnum,padx=5,pady=5)
             bt = Button(self.filter_frame,text = "Debug",command  = self.debug )
-            bt.grid(row=1,column = len(self.filters)+1,padx=5,pady=5)
+            bt.grid(row=1,column = cnum +1,padx=5,pady=5)
 
 
         order_map = get_order_map(self.table_name,self.df.columns)
@@ -316,11 +346,22 @@ class TableUI(Frame):
         # Add Record Entry Boxes
         pass
 
+    def sorter_changed(self,event,checkbox_instance,sort_name):
+        print("sorter:",sort_name,checkbox_instance)
+        for t in self.toggle_vars:
+            tg = t.get()
+            print("checkfilter",t,tg,type(tg))
+
+        self.delete_and_replace()
+
+
+
+
     def clear_filters(self):
         print("clear_filters")
         self.filter_stack = []
-        for control in self.filter_controls:
-            control.set("")
+        for filter in self.filters:
+            filter.control.set("")
         self.filtered_df = self.df.copy()
         self.set_filters()
         self.delete_and_replace()
@@ -519,3 +560,21 @@ class ComboBoxC():
         self.field = field
     def set_control(self,control):
         self.control = control
+    def get(self):
+        return self.control.get()
+
+class DateSortC():
+    def __init__(self,field):
+        self.field = field
+        self.ivar = None
+        self.control = None
+    def set_control(self,control):
+        self.control = control
+    def get(self):
+        return self.control.get()
+
+    def set_ivar(self,ivar):
+        self.ivar = ivar
+
+    def get_ivar(self):
+        return self.ivar

@@ -5,7 +5,8 @@ from classes import *
 
 custom = {"Project Data":
               { "order": ["Client ID","Project ID","Project Title","Solas Primary"],
-                "filters": [ComboBoxC("Client ID"), ComboBoxC("Project ID"), ComboBoxC("Project Title"),ComboBoxC("Solas Primary")],
+                "filter": [ComboBoxC("Client ID"), ComboBoxC("Project ID"), ComboBoxC("Project Title"),ComboBoxC("Solas Primary")],
+                "sort" : [DateSortC("Update Date")],
                 "width": 2200
                },
           "Client ID":
