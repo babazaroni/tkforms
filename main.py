@@ -161,6 +161,11 @@ style.configure("Custom.TLabel",
 style.configure("Treeview", # has effect
                 font=("Arial", 12, "bold"))
 
+#ARGB #ffff0000   red
+#CMYK 0,255,255,0 red
+
+#ARGB #ffff5500 orange
+
 #content_frame = Frame(root)
 #content_frame.pack(fill="x", expand=True, padx=20)
 
