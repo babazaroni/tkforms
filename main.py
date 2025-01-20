@@ -153,9 +153,13 @@ notebook.pack()
 
 notebook.bind("<<NotebookTabChanged>>", on_tab_changed)
 # Configure the font for Notebook tabs
-style = ttk.Style()
+style = tb.Style()
 style.configure('TNotebook.Tab', font=('Arial', 10, 'bold'))
-
+style.configure("Custom.TLabel",
+                font=("Arial", 12),
+                foreground="orange")
+style.configure("Treeview", # has effect
+                font=("Arial", 12, "bold"))
 
 #content_frame = Frame(root)
 #content_frame.pack(fill="x", expand=True, padx=20)

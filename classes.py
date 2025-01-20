@@ -68,6 +68,8 @@ class TableUI(Frame):
         #                            #xscrollcommand=self.tree_scrollx.set,
         #                            selectmode="extended")
 
+ # Change font family and size here
+
         self.my_tree = tb.Treeview(self.tree_frame,style='info.Treeview')
 
         #self.my_tree.grid(row = 0, column = 0)
@@ -275,8 +277,9 @@ class TableUI(Frame):
 
         #filters = self.custom.get("filters", [])
 
+
         for x,filter in enumerate(self.filters):
-            fn_label = Label(self.filter_frame, text=filter.field)
+            fn_label = tb.Label(self.filter_frame, text=filter.field, style="Custom.TLabel")
             fn_label.grid(row=0, column=x, padx=5, pady=5)
             fn_entry = Combobox(self.filter_frame,justify=LEFT)
             fn_entry.grid(row=1, column=x, padx=5, pady=5)
@@ -293,12 +296,12 @@ class TableUI(Frame):
             self.toggle_vars.append(ivar)
             sorter.set_ivar(ivar)
 
-            fn_label = Label(self.sort_frame, text=sorter.field)
+            fn_label = tb.Label(self.sort_frame, text=sorter.field,style ="Custom.TLabel" )
             fn_label.grid(row=0, column=x, padx=5, pady=5)
-            fn_check = tb.Checkbutton(self.sort_frame,variable=self.toggle_vars[-1],onvalue=1,offvalue= 0)
+            fn_check = tb.Checkbutton(self.sort_frame,variable=self.toggle_vars[-1],onvalue=1,offvalue= 0,command = self.sorter_changed)
             sorter.set_control(fn_check)
-            fn_check.bind("<Button-1>",
-                lambda event, checkbox_instance=fn_check,sort_name = sorter.field: self.sorter_changed(event,checkbox_instance,sort_name))
+            #fn_check.bind("<Button-1>",
+            #    lambda event, checkbox_instance=fn_check,sort_name = sorter.field: self.sorter_changed(event,checkbox_instance,sort_name))
             fn_check.grid(row=1,column = x)
 
         cnum += len(self.sorters)
@@ -316,7 +319,7 @@ class TableUI(Frame):
 
         # create record frame entries
         for x,column in enumerate(columns):
-            fn_label = Label(self.record_frame, text=column)
+            fn_label = tb.Label(self.record_frame, text=column,style = "Custom.TLabel")
             fn_label.grid(row=int(x/4), column=(2 * x) % 8, padx=10, pady=5)
 
             dtype = self.df[column].dtype
@@ -346,11 +349,11 @@ class TableUI(Frame):
         # Add Record Entry Boxes
         pass
 
-    def sorter_changed(self,event,checkbox_instance,sort_name):
-        print("sorter:",sort_name,checkbox_instance)
-        for t in self.toggle_vars:
-            tg = t.get()
-            print("checkfilter",t,tg,type(tg))
+    def sorter_changed(self):
+        print("sorter_changed")
+
+
+        self.create_filtered_df()
 
         self.delete_and_replace()
 
