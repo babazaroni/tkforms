@@ -2,30 +2,12 @@ from tkinter import *
 from tkinter import ttk
 from tkinter.ttk import Combobox
 
-from commands import *
+#from commands import *
 from colors import *
-from custom import *
+from custom import custom_dict
 import pandas as pd
 from tkinter import messagebox
 import ttkbootstrap as tb
-
-def get_order_map(table,keys):
-    old_map = [i for i in range(len(keys))]
-    try:
-        order = custom[table]["order"]
-        new_map = []
-        columns = list(keys)
-        for field in order:
-            index = columns.index(field)
-            new_map.append(index)
-            old_map.remove(index)
-        new_map.extend(old_map)
-        #print("get_order_map:",table,new_map)
-        return new_map
-    except:
-        print("---------- get order map error --------",table)
-        return old_map
-
 
 
 class TableUI(Frame):
@@ -47,14 +29,16 @@ class TableUI(Frame):
         self.filter_frame.grid(row=0,column = 0,padx=5,pady=5)
         self.sort_frame = LabelFrame(self.filtersort_frame,text = "Sort",bg = "red")
         self.sort_frame.grid(row = 0,column = 1,padx=5,pady=5)
+        self.filter_command_frame = LabelFrame(self.filtersort_frame, bg="red")
+        self.filter_command_frame.grid(row=0, column=2, padx=5, pady=5)
 
         self.tree_frame = LabelFrame(self,text = table_name,bg = "green")
         self.tree_frame.pack(pady=10)
 
-        self.record_frame = LabelFrame(self, text = "Entry")
+        self.record_frame = LabelFrame(self, text = "Record")
         self.record_frame.pack(fill="x", expand=True, padx=20)
 
-        self.button_frame = LabelFrame(self, text = "Commands")
+        self.button_frame = LabelFrame(self, text = "Actions")
         self.button_frame.pack(fill="x", expand=True, padx=20)
 
         # Create a Treeview Scrollbar
@@ -105,7 +89,7 @@ class TableUI(Frame):
 
         self.my_tree['columns'] = tuple(columns)
 
-        print(columns)
+        print("xxxxxxxxxxxxxxxxxxxxxxx   set_tree_columns",columns,order_map)
 
         self.my_tree.column("#0", width=0, stretch=NO)
         for heading in columns:
@@ -127,6 +111,10 @@ class TableUI(Frame):
         for count in range(0, len(self.filtered_df)):
 
             row = self.filtered_df.iloc[count].tolist()
+            index = self.filtered_df.iloc[count].name
+            print("set_tree_body_df:",count,index)
+            debug_row = self.df.iloc[index].tolist()
+            print("debug_row:",debug_row)
 
             values = []
 
@@ -308,19 +296,20 @@ class TableUI(Frame):
 
         #if len(self.filter_controls):
         if len(self.filters):
-            bt = Button(self.filter_frame,text = "Clear",command = self.clear_filters)
+            bt = Button(self.filter_command_frame,text = "Clear",command = self.clear_filters)
             bt.grid(row=1,column=cnum,padx=5,pady=5)
-            bt = Button(self.filter_frame,text = "Debug",command  = self.debug )
-            bt.grid(row=1,column = cnum +1,padx=5,pady=5)
+            #bt = Button(self.filter_frame,text = "Debug",command  = self.debug )
+            #bt.grid(row=1,column = cnum +1,padx=5,pady=5)
 
 
         order_map = get_order_map(self.table_name,self.df.columns)
         columns = [self.df.columns[x] for x in order_map]
 
+        num_cols = 3
         # create record frame entries
         for x,column in enumerate(columns):
-            fn_label = tb.Label(self.record_frame, text=column,style = "Custom.TLabel")
-            fn_label.grid(row=int(x/4), column=(2 * x) % 8, padx=10, pady=5)
+            fn_label = tb.Label(self.record_frame, text=column,style = "Custom.TLabel",anchor='e')
+            fn_label.grid(row=int(x / num_cols), column= 2* (x % num_cols), padx=10, pady=5)
 
             dtype = self.df[column].dtype
 
@@ -336,7 +325,7 @@ class TableUI(Frame):
                 self.records.append(fn_entry)
 
 
-            fn_entry.grid(row=int(x/4), column=(2 * x) % 8 + 1, padx=10, pady=5)
+            fn_entry.grid(row=int(x / num_cols), column=2 * (x % num_cols) + 1, padx=10, pady=5)
 
 
 
@@ -357,17 +346,20 @@ class TableUI(Frame):
 
         self.delete_and_replace()
 
-
-
-
     def clear_filters(self):
         print("clear_filters")
         self.filter_stack = []
         for filter in self.filters:
             filter.control.set("")
+
+        for sorter in self.sorters:
+            sorter.ivar.set(0)
+
         self.filtered_df = self.df.copy()
         self.set_filters()
+        self.create_filtered_df()
         self.delete_and_replace()
+        self.clear_entries()
 
     def on_treeview_scroll(self,event):
         scroll_position = self.my_tree.yview()
@@ -411,21 +403,27 @@ class TableUI(Frame):
             #else:
             record.insert(0,values[i])
 
-    def blank_check(self):
+    def blank_check(self,message = None):
         for record in self.records:
             print("blank check:",record.get())
             if record.get() != "":
                 return False
 
+        if message:
+            messagebox.showinfo("Notification", message)
+
         return True
 
     def delete_and_replace(self):
+        selected = self.tree_focus()
         self.my_tree.delete(*self.my_tree.get_children())
 
         if glb.USE_DF:
             self.set_tree_body_df()
         if glb.USE_PL:
             self.set_tree_body_pl()
+        if selected:
+            self.my_tree.selection_set(selected)
 
     def convert_by_dtype(self,new_value:str,column_dtype):
         #print("convert_by_dtype",self.df[self.df.columns[column]].dtype)
@@ -472,8 +470,21 @@ class TableUI(Frame):
 
         return row_vals
 
+    def record_check(self):
+
+        if self.blank_check(message = "Record is blank"):
+
+            return
+
+        selected = self.tree_focus()
+        if selected is None:
+            messagebox.showinfo("Notification", "No entry selected")
+            return
+
+        return True
+
     def add_record(self):
-        if self.blank_check():
+        if self.blank_check(message = "Record is blank"):
             return
 
         order_map = get_order_map(self.table_name,self.df.columns)
@@ -493,34 +504,41 @@ class TableUI(Frame):
         if glb.USE_PL:
             pass
 
+        self.apply_filters()
+
+        #self.delete_and_replace()
+
+
+
+
+    def apply_filters(self):
+        self.filtered_df = self.df.copy()
+        self.set_filters()
+        self.create_filtered_df()
         self.delete_and_replace()
 
 
-
-
     def update_record(self):
-        if self.blank_check():
+
+        if self.record_check() is None:
             return
 
-        selected = self.tree_focus()
-        if not selected:
-            messagebox.showinfo("Notification", "No entry selected")
-            return
 
         row_vals = self.get_converted_row_values()
 
         if not row_vals:
             return
 
-        print("update_record",selected)
+        print("update_record", self.tree_focus())
+        index = self.filtered_df.iloc[self.tree_focus()].name
 
         if glb.USE_DF:
-            self.df.iloc[selected] = row_vals
+            self.df.iloc[index] = row_vals
         if glb.USE_PL:
             pass
 
-        self.delete_and_replace()
 
+        self.apply_filters()
 
 
         print("update_record")
@@ -531,6 +549,7 @@ class TableUI(Frame):
             return
 
         selected = self.tree_focus()
+        print("remove one",selected)
         if not selected:
             messagebox.showinfo("Notification", "No entry selected")
             return
@@ -552,32 +571,26 @@ class TableUI(Frame):
 
     def tree_focus(self):
         focus = self.my_tree.focus()
-        print("len tree_focus",len(focus))
+        print("len tree_focus",len(focus),focus)
         if focus == "":
             return None
         return int(focus)
 
 
-class ComboBoxC():
-    def __init__(self,field):
-        self.field = field
-    def set_control(self,control):
-        self.control = control
-    def get(self):
-        return self.control.get()
 
-class DateSortC():
-    def __init__(self,field):
-        self.field = field
-        self.ivar = None
-        self.control = None
-    def set_control(self,control):
-        self.control = control
-    def get(self):
-        return self.control.get()
-
-    def set_ivar(self,ivar):
-        self.ivar = ivar
-
-    def get_ivar(self):
-        return self.ivar
+def get_order_map(table,keys):
+    old_map = [i for i in range(len(keys))]
+    try:
+        order = custom_dict[table]["order"]
+        new_map = []
+        columns = list(keys)
+        for field in order:
+            index = columns.index(field)
+            new_map.append(index)
+            old_map.remove(index)
+        new_map.extend(old_map)
+        #print("get_order_map:",table,new_map)
+        return new_map
+    except:
+        print("---------- get order map error --------",table)
+        return old_map

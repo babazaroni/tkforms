@@ -40,13 +40,14 @@ def prompt_for_db():
         print("file_path:",file_path)
         #try:
         process_db(file_path)
+        file_path_project["text"] = file_path
 
 
         for x,table in enumerate(glb.tables_dict.keys()):
             #Button(table_frame, text=table, command = lambda t=table:set_table(t)).grid(row=0, column=x, padx=10, pady=10)
             tab = ttk.Frame(notebook)
             notebook.add(tab,text = table)
-            tableui = TableUI(tab, table,glb.tables_dict[table],custom.get(table,{}))
+            tableui = TableUI(tab, table,glb.tables_dict[table],custom_dict.get(table,{}))
             tableui.create_controls()
             tableui.set_tree_columns()
             tableui.set_filters()
@@ -73,7 +74,7 @@ def get_selected_tab_widget():
 
     selected_tab_text = notebook.tab(selected_index, "text")
 
-    width = custom.get(selected_tab_text,{}).get('width',1000)
+    width = custom_dict.get(selected_tab_text,{}).get('width',1000)
 
     root.geometry(f"{width}x960")
 
@@ -155,9 +156,9 @@ notebook.bind("<<NotebookTabChanged>>", on_tab_changed)
 # Configure the font for Notebook tabs
 style = tb.Style()
 style.configure('TNotebook.Tab', font=('Arial', 10, 'bold'))
-style.configure("Custom.TLabel",
+style.configure("Custom.TLabel", # has effect
                 font=("Arial", 12),
-                foreground="orange")
+                foreground="#e95420")
 style.configure("Treeview", # has effect
                 font=("Arial", 12, "bold"))
 

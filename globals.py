@@ -4,7 +4,7 @@ import platform
 
 # To create executable, run pyinstaller main.py --onefile --windowed
 
-DEV = True
+DEV = False
 
 dev_path = None
 
