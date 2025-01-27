@@ -48,6 +48,7 @@ def prompt_for_db():
             tab = ttk.Frame(notebook)
             notebook.add(tab,text = table)
             tableui = TableUI(tab, table,glb.tables_dict[table],custom_dict.get(table,{}))
+            tableui.create_maps()
             tableui.create_controls()
             tableui.set_tree_columns()
             tableui.set_filters()
@@ -88,7 +89,7 @@ def get_selected_tab_widget():
         if width > max_width:
             max_width = width
 
-    print("------------------------------------- max_width ----------------------------------",max_width,selected_tab_text)
+    #print("------------------------------------- max_width ----------------------------------",max_width,selected_tab_text)
 
 
     #    width = custom[selected_tab]['width']
@@ -104,7 +105,7 @@ def on_tab_changed(event):
     max_width *= 1.0
     #root.geometry(f"{int(max_width)}x900")
 
-    print(f"Widget in selected tab: {widget_in_selected_tab} {widget_in_selected_tab.winfo_reqwidth()} ")
+    #print(f"Widget in selected tab: {widget_in_selected_tab} {widget_in_selected_tab.winfo_reqwidth()} ")
 
 
 

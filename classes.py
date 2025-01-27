@@ -19,9 +19,10 @@ class TableUI(Frame):
         self.custom = custom_dict
         self.filters = self.custom.get("filter", [])
         self.sorters = self.custom.get("sort", [])
+        self.field_maps = {}
 
-        print("TableUI: custom:")
-        print(self.custom)
+        #print("TableUI: custom:")
+        #print(self.custom)
 
         self.filtersort_frame = Frame(self)
         self.filtersort_frame.pack(pady=10)
@@ -89,7 +90,7 @@ class TableUI(Frame):
 
         self.my_tree['columns'] = tuple(columns)
 
-        print("xxxxxxxxxxxxxxxxxxxxxxx   set_tree_columns",columns,order_map)
+        #print("xxxxxxxxxxxxxxxxxxxxxxx   set_tree_columns",columns,order_map)
 
         self.my_tree.column("#0", width=0, stretch=NO)
         for heading in columns:
@@ -112,14 +113,18 @@ class TableUI(Frame):
 
             row = self.filtered_df.iloc[count].tolist()
             index = self.filtered_df.iloc[count].name
-            print("set_tree_body_df:",count,index)
+            #print("set_tree_body_df:",count,index)
             debug_row = self.df.iloc[index].tolist()
-            print("debug_row:",debug_row)
+            #print("debug_row:",debug_row)
 
             values = []
 
             for o in order_map:
                 entry = row[o]
+                column = self.df.columns[o]
+                if column in self.field_maps.keys():
+                    link = self.field_maps[column]
+                    entry = link.map_to[entry]
 
                 if 'datetime' in str(self.filtered_df[self.filtered_df.columns[o]].dtypes):
                     entry = str(entry).split()[0]
@@ -186,40 +191,78 @@ class TableUI(Frame):
                 return True
         return False
 
+    def create_maps(self):
+        links = custom_dict.get(self.table_name, {}).get('links', [])
+        for link in links:
+            dest_df = glb.tables_dict[link.dest_table]
+            link.map_to = dict(zip(dest_df[link.match_field],dest_df[link.dest_field]))
+            link.map_from = dict(zip(dest_df[link.dest_field],dest_df[link.match_field]))
+            self.field_maps[link.source_field] = link
+
+
+    def get_linked_entries(self,filter,unique_entries):
+        links = custom_dict.get(self.table_name, {}).get('links', [])
+        print("get_linked_entries:",self.table_name)
+        print(links)
+        for link in links:
+            print("link",filter.field,link.source_field)
+            if filter.field == link.source_field:
+                print("get_linked_entries:",link.dest_table)
+                dest_df = glb.tables_dict[link.dest_table]
+                #corresponding_values = dest_df[dest_df[link.match_field].isin(unique_entries)][link.dest_field].tolist()
+                corresponding_values = [link.map_to[key] for key in unique_entries if key in link.map_to]
+                #print("corresponding values:",corresponding_values)
+
+                return sorted(corresponding_values)
+
+        return unique_entries
+
     def set_filters(self):
-        print("set_filters:")
-        print("len:",len(self.filters),len(self.filters))
+        #print("set_filters:")
+        #print("len:",len(self.filters),len(self.filters))
         for filter in self.filters:
-            print("filter:",filter)
+            #print("filter:",filter)
             if not self.control_in_filter_stack(filter.control):
-                print("set_filters:",filter)
-                print("set_filters",self.filtered_df[filter.field])
+                #print("set_filters:",filter)
+                #print("set_filters",self.filtered_df[filter.field])
+
                 unique_entries = sorted(self.filtered_df[filter.field].unique())
-                print("unique:",unique_entries)
+
+                unique_entries = self.get_linked_entries(filter,unique_entries)
+
+
+                #print("unique:",unique_entries)
                 filter.control['values'] = tuple(unique_entries)
 
     def sort_filtered_df(self):
         for x,sorter in enumerate(self.sorters):
-            print("sort_filtered_df:",sorter.ivar.get())
+            #print("sort_filtered_df:",sorter.ivar.get())
             if sorter.ivar.get():
                 self.filtered_df = self.filtered_df.sort_values(by=sorter.field)
 
 
     def create_filtered_df(self):
-        print("create_filtered_df")
+        #print("create_filtered_df")
         self.filtered_df = self.df.copy()
-        print("create_filtered_df start:",len(self.filtered_df))
+       # print("create_filtered_df start:",len(self.filtered_df))
 
 
         for control,name in self.filter_stack:
             print("filter:",name,control.get(),self.filtered_df[name].dtype,type(control.get()))
-            converted_value = self.convert_by_dtype(control.get(),self.df[name].dtype)
+            control_val = control.get()
+
+            print("create filtered df",name,self.field_maps.keys())
+            if name in self.field_maps.keys():
+                link = self.field_maps[name]
+                control_val = link.map_from[control_val]
+
+            converted_value = self.convert_by_dtype(control_val,self.df[name].dtype)
             self.filtered_df = self.filtered_df[(self.filtered_df[name] == converted_value)]
-            print("filter_df",len(self.filtered_df))
+            #print("filter_df",len(self.filtered_df))
 
         self.sort_filtered_df()
 
-        print("create_filtered_df end:",len(self.filtered_df))
+        #print("create_filtered_df end:",len(self.filtered_df))
 
     def combobox_changed(self,event,control,filter_name):
         print("combo_changed")
@@ -308,13 +351,20 @@ class TableUI(Frame):
         num_cols = 3
         # create record frame entries
         for x,column in enumerate(columns):
+
+
             fn_label = tb.Label(self.record_frame, text=column,style = "Custom.TLabel",anchor='e')
             fn_label.grid(row=int(x / num_cols), column= 2* (x % num_cols), padx=10, pady=5)
 
             dtype = self.df[column].dtype
 
+            if column in self.field_maps.keys():
+                link = self.field_maps[column]
+                fn_entry = Combobox(self.record_frame)
+                fn_entry['values'] = tuple(list(link.map_from.keys()))
+            else:
+                fn_entry = Entry(self.record_frame)
 
-            fn_entry = Entry(self.record_frame)
             if 'datetime' in str(dtype):
                 dateformat = "%Y-%m-%d %H:%M:%S"
                 dateformat = "%Y-%m-%d"
@@ -462,7 +512,12 @@ class TableUI(Frame):
             try:
                 rval = record.entry.get() if 'DateEntryx' in str(type(record)) else record.get()
 
-                cval = self.convert_by_dtype(rval, self.df[self.df.columns[order]].dtype)
+                column = self.df.columns[order]
+                if column in self.field_maps.keys():
+                    link = self.field_maps[column]
+                    rval = link.map_from[rval]
+
+                cval = self.convert_by_dtype(rval, self.df[column].dtype)
                 row_vals[order] = cval
             except:
                 messagebox.showinfo("Notification",f"Invalid format for {self.df.columns[order]}")
@@ -571,7 +626,7 @@ class TableUI(Frame):
 
     def tree_focus(self):
         focus = self.my_tree.focus()
-        print("len tree_focus",len(focus),focus)
+        #print("len tree_focus",len(focus),focus)
         if focus == "":
             return None
         return int(focus)

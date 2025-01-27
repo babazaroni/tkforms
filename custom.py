@@ -25,11 +25,22 @@ class DateSortC():
     def get_ivar(self):
         return self.ivar
 
+class Link():
+    def __init__(self,source_field,dest_table,match_field,dest_field):
+        self.source_field = source_field
+        self.dest_table = dest_table
+        self.match_field = match_field
+        self.dest_field = dest_field
+        self.map_to = None
+        self.map_from = None
+
+
 
 custom_dict = {"Project Data":
               { "order": ["Client ID","Project ID","Project Title","Solas Primary"],
                 "filter": [ComboBoxC("Client ID"), ComboBoxC("Project ID"), ComboBoxC("Project Title"),ComboBoxC("Solas Primary")],
                 "sort" : [DateSortC("Update Date")],
+                "links" :  [Link("Client ID","Client ID","ID","Clients")],
                 "width": 2200
                },
           "Client ID":

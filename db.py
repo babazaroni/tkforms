@@ -67,14 +67,14 @@ def process_db(db_path):
 
             table = glb.db.get_table(table_name)
 
-            print("count of nans:")
-            print(table.isna().sum())
+            #print("count of nans:")
+            #print(table.isna().sum())
             table.fillna('',inplace=True)
 
-            print("--------------------------table--------------------------------: ",table_name)
-            print(table)
+            #print("--------------------------table--------------------------------: ",table_name)
+            #print(table)
             rows = [row for row in table]
-            print("type rows:",type(rows[0][0]))
+            #print("type rows:",type(rows[0][0]))
             #glb.project_df = pd.DataFrame(rows,columns=table.columns)
             if glb.USE_DF:
                 glb.tables_dict[table_name] = pd.DataFrame(rows,columns=table.columns)
@@ -89,9 +89,9 @@ def process_db(db_path):
         print("accessdb:", cnn_string)
         cnn = pyo.connect(cnn_string)
         cursor = cnn.cursor()
-        for t in cursor.tables():
-            print("name:",t.table_name)
-            print("type:",t.table_type)
+        #for t in cursor.tables():
+            #print("name:",t.table_name)
+            ##print("type:",t.table_type)
         glb.tables_list = [t.table_name for t in cursor.tables() if t.table_type == 'TABLE']
 
         #print("process_db tables:",glb.tables_list)
@@ -101,8 +101,8 @@ def process_db(db_path):
         for table_name in glb.tables_list:
             #glb.project_df = create_df_sql("select * from [Project Data]",cnn,table_name)
             df = pd.read_sql(f"select * from [{table_name}]", cnn)
-            print("count of nans:")
-            print(df.isna().sum())
+            #print("count of nans:")
+            #print(df.isna().sum())
             df.fillna('',inplace=True)
             #print("table schema:")
             #print(df.dtypes)
