@@ -1,9 +1,8 @@
 import globals as glb
 #import polars as pl
 
-import sqlalchemy as sa
 import pyodbc as pyo
-from sqlalchemy import create_engine
+
 from sqlalchemy import create_engine,inspect
 
 from sqlalchemy.ext.automap import automap_base
@@ -54,6 +53,11 @@ def start_odbc(db_path):
     tables_list = [t.table_name for t in cursor.tables(tableType='TABLE')]
     print(tables_list)
 
+def process_db_sqlalchemy(db_path):
+    engine = get_sqlalchemy_engine((db_path))
+    print("-------------------------process_db_sqlalchemy:-----------------------------------",engine)
+    pass
+
 def process_db(db_path):
     if glb.MDB_PARSER:
         print("starting MDB_PARSER")
@@ -87,8 +91,8 @@ def process_db(db_path):
         driver_string = r"Driver={Microsoft Access Driver (*.mdb, *.accdb)};"
         cnn_string = driver_string + dbq_string
         print("accessdb:", cnn_string)
-        cnn = pyo.connect(cnn_string)
-        cursor = cnn.cursor()
+        glb.cnn = pyo.connect(cnn_string)
+        cursor = glb.cnn.cursor()
         #for t in cursor.tables():
             #print("name:",t.table_name)
             ##print("type:",t.table_type)
@@ -100,13 +104,29 @@ def process_db(db_path):
 
         for table_name in glb.tables_list:
             #glb.project_df = create_df_sql("select * from [Project Data]",cnn,table_name)
-            df = pd.read_sql(f"select * from [{table_name}]", cnn)
+            df = pd.read_sql(f"select * from [{table_name}]", glb.cnn)
+            #df.to_sql(table_name, cnn, if_exists='replace', index=False)
             #print("count of nans:")
             #print(df.isna().sum())
             df.fillna('',inplace=True)
             #print("table schema:")
-            #print(df.dtypes)
             glb.tables_dict[table_name] = df
+
+    if glb.ALCHEMY:
+        glb.engine = get_sqlalchemy_engine(db_path)
+        inspector = inspect(glb.engine)
+
+        # Get list of tables
+        tables = inspector.get_table_names()
+
+        glb.tables_dict = {}
+
+        print("Tables in the Access database:")
+        for table in tables:
+        #    df = pd.read_sql_table(table, con=glb.engine)
+        #    df.fillna('',inplace=True)
+        #    glb.tables_dict[table] = df
+            glb.tables_dict[table] = None
 
 
 

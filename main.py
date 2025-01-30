@@ -47,12 +47,13 @@ def prompt_for_db():
             #Button(table_frame, text=table, command = lambda t=table:set_table(t)).grid(row=0, column=x, padx=10, pady=10)
             tab = ttk.Frame(notebook)
             notebook.add(tab,text = table)
-            tableui = TableUI(tab, table,glb.tables_dict[table],custom_dict.get(table,{}))
+            tableui = TableUI(tab, table,custom_dict.get(table,{}))
             tableui.create_maps()
             tableui.create_controls()
             tableui.set_tree_columns()
             tableui.set_filters()
             tableui.create_filtered_df()
+
             if glb.USE_DF:
                 tableui.set_tree_body_df()
             if glb.USE_PL:
@@ -174,5 +175,24 @@ style.configure("Treeview", # has effect
 
 
 root.mainloop()
+
+### Method 3: Using `query` (Advanced) You can dynamically construct a query string from the dictionary and use the `query` method to search for the row in `df2`. ```
+#
+import pandas as pd
+
+# Example dataframes
+df1 = pd.DataFrame({ 'A': [1, 2, 3], 'B': ['x', 'y', 'z'] })
+df2 = pd.DataFrame({ 'A': [2, 3, 4], 'B': ['y', 'z', 'w'] })
+# Convert a specific row from df1 to a dictionary
+specific_row_dict = df1.iloc[0].to_dict()
+# Change the index to select a different row
+# Construct a query string from the dictionary
+query_str = ' & '.join([f"{key} == {value}" for key, value in specific_row_dict.items()])
+# Search for the row in df2 using the query
+row_exists = df2.query(query_str)
+if not row_exists.empty:
+    print("Row found in df2:")
+    print(row_exists)
+else: print("Row not found in df2.")
 
 

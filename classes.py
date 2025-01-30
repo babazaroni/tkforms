@@ -11,15 +11,19 @@ import ttkbootstrap as tb
 
 
 class TableUI(Frame):
-    def __init__(self,parent,table_name,df,custom_dict):
+    def __init__(self,parent,table_name,custom_dict):
         super().__init__(parent,bg="yellow")
 
         self.table_name = table_name
-        self.df = df
         self.custom = custom_dict
         self.filters = self.custom.get("filter", [])
         self.sorters = self.custom.get("sort", [])
         self.field_maps = {}
+
+        self.df = None
+        self.refresh_df()
+
+        self.selected_record = None
 
         #print("TableUI: custom:")
         #print(self.custom)
@@ -80,7 +84,23 @@ class TableUI(Frame):
         #self.filter_controls = []
 
         self.reqwidth = 0
-        self.filtered_df = df.copy()
+        self.filtered_df = self.df.copy()
+
+    def refresh_df(self):
+        if glb.ALCHEMY:
+            self.df = pd.read_sql_table(self.table_name, con=glb.engine)
+        else:
+            self.df = pd.read_sql(f"select * from [{self.table_name}]", glb.cnn)
+
+        self.df.fillna('', inplace=True)
+        glb.tables_dict[self.table_name] = self.df
+
+    def save_df(self):
+        if glb.ALCHEMY:
+            self.df.to_sql(self.table_name, con=glb.engine, if_exists='replace', index=False)
+        else:
+            #self.df.to_sql(self.table_name, glb.cnn, if_exists='replace', index=False)
+            self.df.to_sql("[Project Data]", glb.cnn, if_exists='replace', index=False)
 
 
     def set_tree_columns(self):
@@ -202,12 +222,12 @@ class TableUI(Frame):
 
     def get_linked_entries(self,filter,unique_entries):
         links = custom_dict.get(self.table_name, {}).get('links', [])
-        print("get_linked_entries:",self.table_name)
-        print(links)
+        #print("get_linked_entries:",self.table_name)
+        #print(links)
         for link in links:
-            print("link",filter.field,link.source_field)
+            #print("link",filter.field,link.source_field)
             if filter.field == link.source_field:
-                print("get_linked_entries:",link.dest_table)
+                #print("get_linked_entries:",link.dest_table)
                 dest_df = glb.tables_dict[link.dest_table]
                 #corresponding_values = dest_df[dest_df[link.match_field].isin(unique_entries)][link.dest_field].tolist()
                 corresponding_values = [link.map_to[key] for key in unique_entries if key in link.map_to]
@@ -226,6 +246,8 @@ class TableUI(Frame):
                 #print("set_filters:",filter)
                 #print("set_filters",self.filtered_df[filter.field])
 
+                #print("self.filtered:",self.filtered_df[filter.field])
+                #print("filtered_df:",filter.field)
                 unique_entries = sorted(self.filtered_df[filter.field].unique())
 
                 unique_entries = self.get_linked_entries(filter,unique_entries)
@@ -243,7 +265,7 @@ class TableUI(Frame):
 
     def create_filtered_df(self):
         #print("create_filtered_df")
-        self.filtered_df = self.df.copy()
+        self.filtered_df =self.df.copy()
        # print("create_filtered_df start:",len(self.filtered_df))
 
 
@@ -428,6 +450,31 @@ class TableUI(Frame):
 
         return first_visible_index
 
+    def search_selected_record(self):
+        sd = self.selected_record.to_dict()
+
+        formatted_strings = []
+
+        for key, value in sd.items():
+            if isinstance(value, str):
+                formatted_strings.append(f"`{key}` == \"{value}\"");continue
+            if isinstance(value,pd.Timestamp):
+                formatted_strings.append(f"`{key}` == '{value}'");continue
+            if pd.isna(value):
+                formatted_strings.append(f"`{key}`.isna()");continue
+
+            formatted_strings.append(f"`{key}` == {value}")
+
+        formatted_string = ' & '.join(formatted_strings)
+        print("formatted_string: ",formatted_string)
+
+        row_exists = self.df.query(formatted_string)
+
+        if len(row_exists.index):
+            return row_exists.index[0]
+
+        return None
+
 
     def select_record(self,event):
 
@@ -443,7 +490,14 @@ class TableUI(Frame):
             record.delete(0,END)
 
         # Grab record Number
-        print("selected:",self.tree_focus())
+        print("selected:-----------------------------------",self.tree_focus())
+        focus = self.tree_focus()
+        print(self.filtered_df.iloc[focus])
+        self.selected_record = self.filtered_df.iloc[focus]
+
+        print("search selected:",self.search_selected_record())
+
+
         # Grab record values
         values = self.my_tree.item(self.tree_focus(), 'values')
 
@@ -542,6 +596,8 @@ class TableUI(Frame):
         if self.blank_check(message = "Record is blank"):
             return
 
+        self.refresh_df()
+
         order_map = get_order_map(self.table_name,self.df.columns)
 
         row_vals = self.get_converted_row_values()
@@ -558,6 +614,8 @@ class TableUI(Frame):
             self.df.loc[len(self.df)] = row_vals
         if glb.USE_PL:
             pass
+
+        self.save_df()
 
         self.apply_filters()
 
@@ -578,19 +636,28 @@ class TableUI(Frame):
         if self.record_check() is None:
             return
 
+        self.refresh_df()
+        record_num = self.search_selected_record()
+
+        if not record_num:
+            messagebox.showinfo("Notification", "Cannot find entry")
+            return
+
 
         row_vals = self.get_converted_row_values()
 
         if not row_vals:
             return
 
-        print("update_record", self.tree_focus())
-        index = self.filtered_df.iloc[self.tree_focus()].name
+        #print("update_record", self.tree_focus())
+        #index = self.filtered_df.iloc[self.tree_focus()].name
 
         if glb.USE_DF:
-            self.df.iloc[index] = row_vals
+            self.df.iloc[record_num] = row_vals
         if glb.USE_PL:
             pass
+
+        self.save_df()
 
 
         self.apply_filters()
@@ -603,16 +670,25 @@ class TableUI(Frame):
         if self.blank_check():
             return
 
+
         selected = self.tree_focus()
         print("remove one",selected)
         if not selected:
             messagebox.showinfo("Notification", "No entry selected")
             return
 
+        self.refresh_df()
+        record_num = self.search_selected_record()
 
-        self.filtered_df.drop(selected,inplace=True)
+        if not record_num:
+            messagebox.showinfo("Notification", "Cannot find entry")
+            return
 
-        self.delete_and_replace()
+        self.df.drop(selected,inplace=True)
+
+        self.save_df()
+
+        self.apply_filters()
         print("remove_one")
 
     def clear_entries(self):

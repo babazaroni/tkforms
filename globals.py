@@ -9,9 +9,10 @@ DEV = False
 dev_path = None
 
 if platform.system() == 'Windows':
-    PYODBC = True
+    PYODBC = False
     ACCESS_PARSER = False
     MDB_PARSER = False
+    ALCHEMY = True
     if DEV:
         dev_path = r"C:\Users\babaz\OneDrive\Desktop\Solas\Database Updated 2024-V1m.accdb"
 else:
@@ -31,6 +32,8 @@ app = None
 project_file = " "
 timesheet_file = " "
 
+cnn = None
+engine = None
 search_term = None
 project_titles = None
 project_titles_filtered = None
