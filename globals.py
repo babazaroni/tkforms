@@ -18,7 +18,8 @@ if platform.system() == 'Windows':
 else:
     PYODBC = False
     ACCESS_PARSER = False
-    MDB_PARSER = True
+    MDB_PARSER = False
+    ALCHEMY = True
     if DEV:
         dev_path = "/home/cc/Solas/data/Database Updated 2024-6.accdb"
 
