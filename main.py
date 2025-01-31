@@ -173,26 +173,5 @@ style.configure("Treeview", # has effect
 #content_frame.pack(fill="x", expand=True, padx=20)
 
 
-
 root.mainloop()
-
-### Method 3: Using `query` (Advanced) You can dynamically construct a query string from the dictionary and use the `query` method to search for the row in `df2`. ```
-#
-import pandas as pd
-
-# Example dataframes
-df1 = pd.DataFrame({ 'A': [1, 2, 3], 'B': ['x', 'y', 'z'] })
-df2 = pd.DataFrame({ 'A': [2, 3, 4], 'B': ['y', 'z', 'w'] })
-# Convert a specific row from df1 to a dictionary
-specific_row_dict = df1.iloc[0].to_dict()
-# Change the index to select a different row
-# Construct a query string from the dictionary
-query_str = ' & '.join([f"{key} == {value}" for key, value in specific_row_dict.items()])
-# Search for the row in df2 using the query
-row_exists = df2.query(query_str)
-if not row_exists.empty:
-    print("Row found in df2:")
-    print(row_exists)
-else: print("Row not found in df2.")
-
 

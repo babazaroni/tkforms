@@ -134,7 +134,7 @@ class TableUI(Frame):
             row = self.filtered_df.iloc[count].tolist()
             index = self.filtered_df.iloc[count].name
             #print("set_tree_body_df:",count,index)
-            debug_row = self.df.iloc[index].tolist()
+            #debug_row = self.df.iloc[index].tolist()
             #print("debug_row:",debug_row)
 
             values = []
@@ -617,14 +617,14 @@ class TableUI(Frame):
 
         self.save_df()
 
-        self.apply_filters()
+        self.update_display()
 
         #self.delete_and_replace()
 
 
 
 
-    def apply_filters(self):
+    def update_display(self):
         self.filtered_df = self.df.copy()
         self.set_filters()
         self.create_filtered_df()
@@ -660,7 +660,7 @@ class TableUI(Frame):
         self.save_df()
 
 
-        self.apply_filters()
+        self.update_display()
 
 
         print("update_record")
@@ -683,18 +683,24 @@ class TableUI(Frame):
         if not record_num:
             messagebox.showinfo("Notification", "Cannot find entry")
             return
-
-        self.df.drop(selected,inplace=True)
+        print("remove drop:",self.df.iloc[record_num])
+        self.df.drop(record_num,inplace=True)
 
         self.save_df()
 
-        self.apply_filters()
+        self.update_display()
+
+        self.clear_entries()
+
         print("remove_one")
 
     def clear_entries(self):
         print("clear_entries")
         for record in self.records:
             record.delete(0,END)
+
+        #self.my_tree.focus("")  # does not work
+        self.my_tree.selection_set()
 
     def debug(self):
         print("focus:",self.tree_focus(),type(self.tree_focus()))
