@@ -28,6 +28,17 @@ def set_tablex(table):
 
     content_dict[table].pack()
 
+def get_table_order():
+    order = []
+    source = list(glb.tables_dict.keys())
+    for t in custom_dict["TableOrder"]:
+        if t in source:
+            order.append(t)
+            source.remove(t)
+    order.extend(source)
+    print("get table order:",order)
+    return order
+
 
 def prompt_for_db():
     global root
@@ -43,11 +54,11 @@ def prompt_for_db():
         file_path_project["text"] = file_path
 
 
-        for x,table in enumerate(glb.tables_dict.keys()):
+        for x,table in enumerate(get_table_order()):
             #Button(table_frame, text=table, command = lambda t=table:set_table(t)).grid(row=0, column=x, padx=10, pady=10)
             tab = ttk.Frame(notebook)
             notebook.add(tab,text = table)
-            tableui = TableUI(tab, table,custom_dict.get(table,{}))
+            tableui = TableUI(tab, table,custom_dict["Tables"].get(table,{}))
             tableui.create_maps()
             tableui.create_controls()
             tableui.set_tree_columns()
@@ -76,7 +87,7 @@ def get_selected_tab_widget():
 
     selected_tab_text = notebook.tab(selected_index, "text")
 
-    width = custom_dict.get(selected_tab_text,{}).get('width',1000)
+    width = custom_dict["Tables"].get(selected_tab_text,{}).get('width',1000)
 
     root.geometry(f"{width}x960")
 
@@ -152,6 +163,7 @@ file_path_project.grid(row = 0, column = 1)
 #table_frame.pack(fill="x", expand=True, padx=20,pady=5)
 
 notebook = ttk.Notebook(root)
+#notebook.pack(fill='both', expand=True)
 notebook.pack()
 
 notebook.bind("<<NotebookTabChanged>>", on_tab_changed)

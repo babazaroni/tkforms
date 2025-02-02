@@ -36,7 +36,10 @@ class Link():
 
 
 
-custom_dict = {"Project Data":
+custom_dict ={
+    "TableOrder":["Project Data","Client ID","PM ID","Solas Architects","Solas Architect Rates","Financials"],
+    "Tables":
+        {"Project Data":
               { "order": ["Client ID","Project ID","Project Title","Solas Primary"],
                 "filter": [ComboBoxC("Client ID"), ComboBoxC("Project ID"), ComboBoxC("Project Title"),ComboBoxC("Solas Primary")],
                 "sort" : [DateSortC("Update Date")],
@@ -51,6 +54,7 @@ custom_dict = {"Project Data":
           "Financials":
               {"order": [],
                "filters": [],
+               "ignore": ["ID"],
                 "width": 1740
                },
           "PM ID":
@@ -61,6 +65,7 @@ custom_dict = {"Project Data":
           "Solas Architect Rates":
               {"order": [],
                "filters": [],
+               "ignore": ["ID"],
                 "width": 1740
                },
           "Solas Architects":
@@ -69,7 +74,7 @@ custom_dict = {"Project Data":
                 "width": 1100
                },
 
-        }
+        }}
 
 
 

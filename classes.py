@@ -20,8 +20,9 @@ class TableUI(Frame):
         self.sorters = self.custom.get("sort", [])
         self.field_maps = {}
 
-        self.df = None
-        self.refresh_df()
+        self.df = glb.tables_dict[table_name]
+        #self.df = None
+        #self.refresh_df()
 
         self.selected_record = None
 
@@ -212,16 +213,18 @@ class TableUI(Frame):
         return False
 
     def create_maps(self):
-        links = custom_dict.get(self.table_name, {}).get('links', [])
+        links = custom_dict["Tables"].get(self.table_name, {}).get('links', [])
         for link in links:
+            print("link:",link)
             dest_df = glb.tables_dict[link.dest_table]
+            print("dest_df:",dest_df)
             link.map_to = dict(zip(dest_df[link.match_field],dest_df[link.dest_field]))
             link.map_from = dict(zip(dest_df[link.dest_field],dest_df[link.match_field]))
             self.field_maps[link.source_field] = link
 
 
     def get_linked_entries(self,filter,unique_entries):
-        links = custom_dict.get(self.table_name, {}).get('links', [])
+        links = custom_dict["Tables"].get(self.table_name, {}).get('links', [])
         #print("get_linked_entries:",self.table_name)
         #print(links)
         for link in links:
@@ -455,7 +458,15 @@ class TableUI(Frame):
 
         formatted_strings = []
 
+        keys = []
+        x = 0
+
         for key, value in sd.items():
+
+            keys.append(key)
+            f = f"@keys[{x}]"
+            x = x+1
+
             if isinstance(value, str):
                 formatted_strings.append(f"`{key}` == \"{value}\"");continue
             if isinstance(value,pd.Timestamp):
@@ -467,6 +478,7 @@ class TableUI(Frame):
 
         formatted_string = ' & '.join(formatted_strings)
         print("formatted_string: ",formatted_string)
+
 
         row_exists = self.df.query(formatted_string)
 
@@ -495,7 +507,7 @@ class TableUI(Frame):
         print(self.filtered_df.iloc[focus])
         self.selected_record = self.filtered_df.iloc[focus]
 
-        print("search selected:",self.search_selected_record())
+        #print("search selected:",self.search_selected_record())
 
 
         # Grab record values
@@ -716,17 +728,29 @@ class TableUI(Frame):
 
 
 def get_order_map(table,keys):
+    columns = list(keys)
+
     old_map = [i for i in range(len(keys))]
+
+
+    for field in custom_dict["Tables"][table].get("ignore",[]):
+        try:
+            index = columns.index(field)
+            old_map.remove(index)
+        except:
+            pass
+
     try:
-        order = custom_dict[table]["order"]
+        order = custom_dict["Tables"][table]["order"]
+        ignore = custom_dict["Tables"][table].get("ignore",[])
+
         new_map = []
-        columns = list(keys)
+
         for field in order:
             index = columns.index(field)
             new_map.append(index)
             old_map.remove(index)
         new_map.extend(old_map)
-        #print("get_order_map:",table,new_map)
         return new_map
     except:
         print("---------- get order map error --------",table)

@@ -123,10 +123,10 @@ def process_db(db_path):
 
         print("Tables in the Access database:")
         for table in tables:
-        #    df = pd.read_sql_table(table, con=glb.engine)
-        #    df.fillna('',inplace=True)
-        #    glb.tables_dict[table] = df
-            glb.tables_dict[table] = None
+            df = pd.read_sql_table(table, con=glb.engine)
+            df.fillna('',inplace=True)
+            glb.tables_dict[table] = df
+            #glb.tables_dict[table] = None
 
 
 
