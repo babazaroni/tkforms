@@ -9,6 +9,8 @@ import pandas as pd
 from tkinter import messagebox
 import ttkbootstrap as tb
 
+import traceback
+
 
 class TableUI(Frame):
     def __init__(self,parent,table_name,custom_dict):
@@ -17,7 +19,9 @@ class TableUI(Frame):
         self.table_name = table_name
         self.custom = custom_dict
         self.filters = self.custom.get("filter", [])
-        self.sorters = self.custom.get("sort", [])
+        self.sort_optional = self.custom.get("sort_optional", [])
+        self.sort = self.custom.get("sort",[])
+
         self.field_maps = {}
 
         self.df = glb.tables_dict[table_name]
@@ -259,12 +263,14 @@ class TableUI(Frame):
                 #print("unique:",unique_entries)
                 filter.control['values'] = tuple(unique_entries)
 
-    def sort_filtered_df(self):
-        for x,sorter in enumerate(self.sorters):
+    def sort_filtered_df_optional(self):
+        for x,sorter in enumerate(self.sort_optional):
             #print("sort_filtered_df:",sorter.ivar.get())
             if sorter.ivar.get():
                 self.filtered_df = self.filtered_df.sort_values(by=sorter.field)
 
+    def sort_filtered_df(self):
+        self.filtered_df = self.filtered_df.sort_values(by=self.sort)
 
     def create_filtered_df(self):
         #print("create_filtered_df")
@@ -284,6 +290,8 @@ class TableUI(Frame):
             converted_value = self.convert_by_dtype(control_val,self.df[name].dtype)
             self.filtered_df = self.filtered_df[(self.filtered_df[name] == converted_value)]
             #print("filter_df",len(self.filtered_df))
+
+        self.sort_filtered_df_optional()
 
         self.sort_filtered_df()
 
@@ -347,7 +355,7 @@ class TableUI(Frame):
 
         self.toggle_vars = []
 
-        for x,sorter in enumerate(self.sorters):
+        for x,sorter in enumerate(self.sort_optional):
             ivar = IntVar()
             self.toggle_vars.append(ivar)
             sorter.set_ivar(ivar)
@@ -360,7 +368,7 @@ class TableUI(Frame):
             #    lambda event, checkbox_instance=fn_check,sort_name = sorter.field: self.sorter_changed(event,checkbox_instance,sort_name))
             fn_check.grid(row=1,column = x)
 
-        cnum += len(self.sorters)
+        cnum += len(self.sort_optional)
 
         #if len(self.filter_controls):
         if len(self.filters):
@@ -427,7 +435,7 @@ class TableUI(Frame):
         for filter in self.filters:
             filter.control.set("")
 
-        for sorter in self.sorters:
+        for sorter in self.sort_optional:
             sorter.ivar.set(0)
 
         self.filtered_df = self.df.copy()
@@ -481,8 +489,11 @@ class TableUI(Frame):
 
 
         row_exists = self.df.query(formatted_string)
+        print("row_exists type:",type(row_exists))
+        print("row_exists:",row_exists)
 
         if len(row_exists.index):
+            print("row exists, returning:",row_exists.index[0])
             return row_exists.index[0]
 
         return None
@@ -561,11 +572,19 @@ class TableUI(Frame):
 
             print("its a bool")
 
-        series = pd.Series([new_value])
-        print("convert by dtype:",new_value,column_dtype)
-        converted_value = series.astype(column_dtype).iloc[0]
+        print("type",type(column_dtype))
+        if column_dtype == 'float64':
+            converted_value = float(new_value)
+            print("its float64")
+        else:
+            series = pd.Series([new_value])
+            print("series:",series)
+            print("convert by dtype:",new_value,column_dtype)
+            print("astype:",series.astype(column_dtype))
+            converted_value = series.astype(column_dtype).iloc[0]
 
-        #print("convert_by_dtype returns:",converted_value,type(converted_value))
+        #
+        print("convert_by_dtype returns:",converted_value,type(converted_value))
 
         return converted_value
 
@@ -576,17 +595,22 @@ class TableUI(Frame):
         row_vals = [0] * len(self.records)
         for record,order in zip(self.records,order_map):
             try:
-                rval = record.entry.get() if 'DateEntryx' in str(type(record)) else record.get()
+                rval = record.entry.get() if 'DateEntry' in str(type(record)) else record.get()
 
                 column = self.df.columns[order]
                 if column in self.field_maps.keys():
                     link = self.field_maps[column]
                     rval = link.map_from[rval]
 
+                print("get_converted_row_vals:",rval,column,self.df[column].dtype)
                 cval = self.convert_by_dtype(rval, self.df[column].dtype)
+                print("cval:",cval)
                 row_vals[order] = cval
-            except:
+            except Exception as e:
+                print("get_converted_row_values exception:",e)
+                print(traceback.print_exc())
                 messagebox.showinfo("Notification",f"Invalid format for {self.df.columns[order]}")
+
                 return None
 
         return row_vals
@@ -651,7 +675,7 @@ class TableUI(Frame):
         self.refresh_df()
         record_num = self.search_selected_record()
 
-        if not record_num:
+        if record_num is None:
             messagebox.showinfo("Notification", "Cannot find entry")
             return
 
@@ -692,7 +716,7 @@ class TableUI(Frame):
         self.refresh_df()
         record_num = self.search_selected_record()
 
-        if not record_num:
+        if record_num is None:
             messagebox.showinfo("Notification", "Cannot find entry")
             return
         print("remove drop:",self.df.iloc[record_num])
@@ -730,28 +754,26 @@ class TableUI(Frame):
 def get_order_map(table,keys):
     columns = list(keys)
 
-    old_map = [i for i in range(len(keys))]
-
+    default_map = [i for i in range(len(keys))]
 
     for field in custom_dict["Tables"][table].get("ignore",[]):
         try:
             index = columns.index(field)
-            old_map.remove(index)
+            default_map.remove(index)
         except:
             pass
 
     try:
         order = custom_dict["Tables"][table]["order"]
-        ignore = custom_dict["Tables"][table].get("ignore",[])
 
         new_map = []
 
         for field in order:
             index = columns.index(field)
             new_map.append(index)
-            old_map.remove(index)
-        new_map.extend(old_map)
+            default_map.remove(index)
+        new_map.extend(default_map)
         return new_map
     except:
         print("---------- get order map error --------",table)
-        return old_map
+        return default_map

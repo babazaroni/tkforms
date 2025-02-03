@@ -42,7 +42,7 @@ custom_dict ={
         {"Project Data":
               { "order": ["Client ID","Project ID","Project Title","Solas Primary"],
                 "filter": [ComboBoxC("Client ID"), ComboBoxC("Project ID"), ComboBoxC("Project Title"),ComboBoxC("Solas Primary")],
-                "sort" : [DateSortC("Update Date")],
+                "sort_optional" : [DateSortC("Update Date")],
                 "links" :  [Link("Client ID","Client ID","ID","Clients")],
                 "width": 2200
                },
@@ -52,9 +52,12 @@ custom_dict ={
                          "width": 1050
                          },
           "Financials":
-              {"order": [],
-               "filters": [],
-               "ignore": ["ID"],
+              {"order": ["ID","Client ID","Project ID","Project Title","Task","Source","Description"],
+               "filter": [ComboBoxC("Client ID"), ComboBoxC("Project ID"), ComboBoxC("Project Title"),ComboBoxC("Task")],
+               "links": [Link("Client ID", "Client ID", "ID", "Clients")],
+               #"sort": ["Client ID","Project ID","Project Title","Task","Source","Description"],
+               "sort": [ "Client ID","Project ID","Project Title","Task","Source"],
+               "ignore": [],
                 "width": 1740
                },
           "PM ID":
@@ -65,7 +68,8 @@ custom_dict ={
           "Solas Architect Rates":
               {"order": [],
                "filters": [],
-               "ignore": ["ID"],
+               "ignore": [],
+               "links": [Link("Architect", "Solas Architects", "ID", "Architects")],
                 "width": 1740
                },
           "Solas Architects":
