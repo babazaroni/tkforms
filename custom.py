@@ -57,12 +57,14 @@ custom_dict ={
                "links": [Link("Client ID", "Client ID", "ID", "Clients")],
                #"sort": ["Client ID","Project ID","Project Title","Task","Source","Description"],
                "sort": [ "Client ID","Project ID","Project Title","Task","Source"],
+                "blank_rep": ["Client ID","Project ID","Project Title","Task","Source"],
                "ignore": [],
                 "width": 1740
                },
           "PM ID":
               {"order": [],
                "filters": [],
+                #"links": [Link("Client ID", "Client ID", "ID", "Clients")],
                 "width": 1930
                },
           "Solas Architect Rates":

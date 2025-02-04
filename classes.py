@@ -21,6 +21,7 @@ class TableUI(Frame):
         self.filters = self.custom.get("filter", [])
         self.sort_optional = self.custom.get("sort_optional", [])
         self.sort = self.custom.get("sort",[])
+        self.blank_rep = self.custom.get("blank_rep",[])
 
         self.field_maps = {}
 
@@ -127,6 +128,37 @@ class TableUI(Frame):
         for heading in columns:
             self.my_tree.heading(heading, text=heading, anchor=W)
 
+    def get_converted_row(self,index,order_map,row_last=None):
+        row = self.filtered_df.iloc[index].tolist()
+
+        values = []
+
+        for o in order_map:
+
+            entry = row[o]
+
+            column = self.df.columns[o]
+            if column in self.field_maps.keys():
+                link = self.field_maps[column]
+                entry = link.map_to[entry]
+                row[o] = entry
+
+            if 'datetime' in str(self.filtered_df[self.filtered_df.columns[o]].dtypes):
+                entry = str(entry).split()[0]
+                if entry == "NaT":
+                    entry = ""
+
+            if row_last:
+                col = self.filtered_df.columns[o]
+                if col in self.blank_rep:
+                    if entry == row_last[o]:
+                        entry = ""
+
+            values.append(entry)
+
+        return values,row
+
+
     def set_tree_body_df(self):
 
         for item in self.my_tree.get_children():
@@ -134,45 +166,25 @@ class TableUI(Frame):
 
         order_map = get_order_map(self.table_name, self.filtered_df.columns)
 
-        for count in range(0, len(self.filtered_df)):
+        row_last = None
 
-            row = self.filtered_df.iloc[count].tolist()
-            index = self.filtered_df.iloc[count].name
-            #print("set_tree_body_df:",count,index)
-            #debug_row = self.df.iloc[index].tolist()
-            #print("debug_row:",debug_row)
+        for index in range(0, len(self.filtered_df)):
 
-            values = []
-
-            for o in order_map:
-                entry = row[o]
-                column = self.df.columns[o]
-                if column in self.field_maps.keys():
-                    link = self.field_maps[column]
-                    entry = link.map_to[entry]
-
-                if 'datetime' in str(self.filtered_df[self.filtered_df.columns[o]].dtypes):
-                    entry = str(entry).split()[0]
-                    if entry == "NaT":
-                        entry = ""
-                    values.append(entry)
-                else:
-                    values.append(entry)
-
-            #values = [row[o] for o in order_map]
+            values,row_last = self.get_converted_row(index,order_map,row_last)
 
             tp = tuple(values)
 
-            if count % 2 == 0:
-                self.my_tree.insert(parent='', index='end', iid=count, text='',
+            if index % 2 == 0:
+                self.my_tree.insert(parent='', index='end', iid=index, text='',
                                     values=tp,
                                     tags=('evenrow',))
             else:
-                self.my_tree.insert(parent='', index='end', iid=count, text='',
+                self.my_tree.insert(parent='', index='end', iid=index, text='',
                                     values=tp,
                                     tags=('oddrow',))
 
         self.reqwidth = self.my_tree.winfo_reqwidth()
+
 
 
     def set_tree_body_pl(self):
@@ -506,28 +518,18 @@ class TableUI(Frame):
             return
 
         for record in self.records:
-
-            #if 'DateEntry' in str(type(record)):
-            #    record.entry.delete(0,END)
-            #else:
             record.delete(0,END)
 
-        # Grab record Number
-        print("selected:-----------------------------------",self.tree_focus())
         focus = self.tree_focus()
-        print(self.filtered_df.iloc[focus])
+
         self.selected_record = self.filtered_df.iloc[focus]
 
-        #print("search selected:",self.search_selected_record())
+        order_map = get_order_map(self.table_name, self.filtered_df.columns)
+        values, row_last = self.get_converted_row(focus, order_map)
 
-
-        # Grab record values
-        values = self.my_tree.item(self.tree_focus(), 'values')
+        #values = self.my_tree.item(self.tree_focus(), 'values')
 
         for i,record in enumerate(self.records):
-            #if 'DateEntry' in str(type(record)):
-            #    record.insert(0,values[i]) #xxx
-            #else:
             record.insert(0,values[i])
 
     def blank_check(self,message = None):
