@@ -92,6 +92,26 @@ class TableUI(Frame):
         self.reqwidth = 0
         self.filtered_df = self.df.copy()
 
+    def unique_fix(self,record_num):
+        uniques = custom_dict["Tables"].get(self.table_name, {}).get('unique', [])
+        if not len(uniques):
+            return
+
+        for field in uniques:
+
+            column = self.df[field]
+
+            duplicates = self.df[column.isin(column[column.duplicated()])].sort_values(field)
+
+            if not duplicates.empty:
+                largest_series = column.nlargest(1)
+                largest = largest_series.iloc(0)[0]
+                for index,row in duplicates.iterrows():
+                    if index == record_num:
+                        self.df.loc[record_num,field] = largest + 1
+
+
+
     def refresh_df(self):
         if glb.ALCHEMY:
             self.df = pd.read_sql_table(self.table_name, con=glb.engine)
@@ -102,8 +122,12 @@ class TableUI(Frame):
         glb.tables_dict[self.table_name] = self.df
 
     def save_df(self):
+
         if glb.ALCHEMY:
-            self.df.to_sql(self.table_name, con=glb.engine, if_exists='replace', index=False)
+            try:
+                self.df.to_sql(self.table_name, con=glb.engine, if_exists='replace', index=False)
+            except:
+                messagebox.showinfo("Access Error","Could not save. Is Access using this table?")
         else:
             #self.df.to_sql(self.table_name, glb.cnn, if_exists='replace', index=False)
             self.df.to_sql("[Project Data]", glb.cnn, if_exists='replace', index=False)
@@ -116,17 +140,19 @@ class TableUI(Frame):
 
         self.my_tree['columns'] = tuple(columns)
 
-        #print("xxxxxxxxxxxxxxxxxxxxxxx   set_tree_columns",columns,order_map)
 
         self.my_tree.column("#0", width=0, stretch=NO)
         for heading in columns:
             self.my_tree.column(heading,anchor = W, width = 140)
+
+
 
         self.my_tree.heading("#0", text="", anchor=W)
 
 
         for heading in columns:
             self.my_tree.heading(heading, text=heading, anchor=W)
+
 
     def get_converted_row(self,index,order_map,row_last=None):
         row = self.filtered_df.iloc[index].tolist()
@@ -171,6 +197,7 @@ class TableUI(Frame):
         for index in range(0, len(self.filtered_df)):
 
             values,row_last = self.get_converted_row(index,order_map,row_last)
+
 
             tp = tuple(values)
 
@@ -395,8 +422,8 @@ class TableUI(Frame):
 
         num_cols = 3
         # create record frame entries
-        for x,column in enumerate(columns):
-
+        x = 0
+        for column in columns:
 
             fn_label = tb.Label(self.record_frame, text=column,style = "Custom.TLabel",anchor='e')
             fn_label.grid(row=int(x / num_cols), column= 2* (x % num_cols), padx=10, pady=5)
@@ -415,14 +442,13 @@ class TableUI(Frame):
                 dateformat = "%Y-%m-%d"
                 fn_entry = tb.DateEntry(self.record_frame, bootstyle="dark",dateformat = dateformat)
                 fn_entry.entry.delete(0, END)
-                self.records.append(fn_entry.entry)
+                self.records.append(fn_entry.entry)  #xxx
             else:
                 self.records.append(fn_entry)
 
-
             fn_entry.grid(row=int(x / num_cols), column=2 * (x % num_cols) + 1, padx=10, pady=5)
 
-
+            x += 1
 
         self.update_button.grid(row=0, column=0, padx=10, pady=10)
         self.add_button.grid(row=0, column=1, padx=10, pady=10)
@@ -552,7 +578,11 @@ class TableUI(Frame):
         if glb.USE_PL:
             self.set_tree_body_pl()
         if selected:
-            self.my_tree.selection_set(selected)
+            try:
+                self.my_tree.selection_set(selected)
+            except:
+                print("selected not present")
+
 
     def convert_by_dtype(self,new_value:str,column_dtype):
         #print("convert_by_dtype",self.df[self.df.columns[column]].dtype)
@@ -590,11 +620,14 @@ class TableUI(Frame):
 
         return converted_value
 
-    def get_converted_row_values(self):
+    def get_converted_row_values(self): #xxx  converts all but ignored
 
         order_map = get_order_map(self.table_name,self.df.columns)
 
-        row_vals = [0] * len(self.records)
+        row_vals = self.selected_record.tolist()
+
+        #row_vals = [0] * len(self.records)
+
         for record,order in zip(self.records,order_map):
             try:
                 rval = record.entry.get() if 'DateEntry' in str(type(record)) else record.get()
@@ -606,7 +639,8 @@ class TableUI(Frame):
 
                 print("get_converted_row_vals:",rval,column,self.df[column].dtype)
                 cval = self.convert_by_dtype(rval, self.df[column].dtype)
-                print("cval:",cval)
+                print(f"df[{column}.dtype:",self.df[column].dtype)
+                print(f"row_vals[{order}] = {cval}")
                 row_vals[order] = cval
             except Exception as e:
                 print("get_converted_row_values exception:",e)
@@ -643,15 +677,19 @@ class TableUI(Frame):
         if not row_vals:
             return
 
-        try:
-            row_vals = [ self.convert_by_dtype(self.records[order].get(),self.df[order].dtype) for order in order_map]
-        except:
-            pass
+        #try:
+        #    row_vals = [ self.convert_by_dtype(self.records[order].get(),self.df[order].dtype) for order in order_map]
+        #except:
+        #    print("add_record: convert_by_dtype failed ")
+        #    pass
 
         if glb.USE_DF:
-            self.df.loc[len(self.df)] = row_vals
+            self.df.loc[len(self.df)] = row_vals  #xxx
+            print("add_record: columns",len(row_vals),self.df.columns)
         if glb.USE_PL:
             pass
+
+        self.unique_fix(len(self.df)-1)
 
         self.save_df()
 
@@ -694,6 +732,8 @@ class TableUI(Frame):
             self.df.iloc[record_num] = row_vals
         if glb.USE_PL:
             pass
+
+        self.unique_fix(record_num)
 
         self.save_df()
 

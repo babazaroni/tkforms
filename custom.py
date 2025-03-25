@@ -40,7 +40,7 @@ custom_dict ={
     "TableOrder":["Project Data","Client ID","PM ID","Solas Architects","Solas Architect Rates","Financials"],
     "Tables":
         {"Project Data":
-              { "order": ["Client ID","Project ID","Project Title","Solas Primary"],
+              { "order": ["Client ID","Project ID","Project Title","Completed","Solas Primary"],
                 "filter": [ComboBoxC("Client ID"), ComboBoxC("Project ID"), ComboBoxC("Project Title"),ComboBoxC("Solas Primary")],
                 "sort_optional" : [DateSortC("Update Date")],
                 "links" :  [Link("Client ID","Client ID","ID","Clients")],
@@ -77,8 +77,23 @@ custom_dict ={
           "Solas Architects":
               {"order": [],
                "filters": [],
+               "unique": ["ID"],
                 "width": 1100
                },
+         "Fees":
+             {
+                 "order": ["Client ID", "Project ID", "Project Title", "Fee Phase"],
+                 "filter": [ComboBoxC("Client ID"), ComboBoxC("Project ID"), ComboBoxC("Project Title")],
+                 "ignore": ["IDx"],
+                 "unique": ["ID"],
+                 "links": [Link("Client ID", "Client ID", "ID", "Clients")],
+              "width": 2200
+              },
+         "Choices":
+             {"order": [],
+              "filters": [],
+              "width": 1100
+              },
 
         }}
 
