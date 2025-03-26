@@ -59,7 +59,7 @@ def prompt_for_db():
             tab = ttk.Frame(notebook)
             notebook.add(tab,text = table)
             tableui = TableUI(tab, table,custom_dict["Tables"].get(table,{}))
-            tableui.create_maps()
+            tableui.create_maps()  # linkxxx create map when table created
             tableui.create_controls()
             tableui.set_tree_columns()
             tableui.set_filters()

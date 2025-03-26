@@ -252,7 +252,7 @@ class TableUI(Frame):
                 return True
         return False
 
-    def create_maps(self):
+    def create_maps(self): # linkxxx  creates map_to and map_from dictionary
         links = custom_dict["Tables"].get(self.table_name, {}).get('links', [])
         for link in links:
             print("link:",link)
@@ -264,17 +264,13 @@ class TableUI(Frame):
 
 
     def get_linked_entries(self,filter,unique_entries):
-        links = custom_dict["Tables"].get(self.table_name, {}).get('links', [])
-        #print("get_linked_entries:",self.table_name)
-        #print(links)
+        links = custom_dict["Tables"].get(self.table_name, {}).get('links', [])  #linkxxx  get_linked_entries
+
         for link in links:
-            #print("link",filter.field,link.source_field)
+
             if filter.field == link.source_field:
-                #print("get_linked_entries:",link.dest_table)
-                dest_df = glb.tables_dict[link.dest_table]
-                #corresponding_values = dest_df[dest_df[link.match_field].isin(unique_entries)][link.dest_field].tolist()
+
                 corresponding_values = [link.map_to[key] for key in unique_entries if key in link.map_to]
-                #print("corresponding values:",corresponding_values)
 
                 return sorted(corresponding_values)
 
@@ -354,30 +350,7 @@ class TableUI(Frame):
             self.set_tree_body_pl()
 
 
-    def create_controls(self):
-        # Add Filter Boxes
-
-        #fn_labelx = Label(filter_frame, text="First Name")
-        #fn_labelx.grid(row=0, column=0, padx=10, pady=1)
-        #fn_entryx = Entry(filter_frame)
-        #fn_entryx.grid(row=1, column=0, padx=10, pady=1)
-
-        self.my_tree.pack()
-
-        # Configure the Scrollbar
-        self.tree_scrolly.config(command=self.my_tree.yview)
-        #self.tree_scrollx.config(command=self.my_tree.xview)
-        # tree_scroll.config(command=my_tree.xview)
-
-        # set_tree_columns()
-
-        # Create Striped Row Tags
-        self.my_tree.tag_configure('oddrow', background=glb.saved_secondary_color)
-        self.my_tree.tag_configure('evenrow', background=glb.saved_primary_color)
-
-        #filters = self.custom.get("filters", [])
-
-
+    def create_filters(self):
         for x,filter in enumerate(self.filters):
             fn_label = tb.Label(self.filter_frame, text=filter.field, style="Custom.TLabel")
             fn_label.grid(row=0, column=x, padx=5, pady=5)
@@ -387,6 +360,7 @@ class TableUI(Frame):
                 lambda event, combobox_instance=fn_entry,filter_name = filter.field: self.combobox_changed(event,combobox_instance,filter_name))
             filter.set_control(fn_entry)
 
+    def create_sorters(self):
         cnum = len(self.filters)
 
         self.toggle_vars = []
@@ -404,7 +378,8 @@ class TableUI(Frame):
             #    lambda event, checkbox_instance=fn_check,sort_name = sorter.field: self.sorter_changed(event,checkbox_instance,sort_name))
             fn_check.grid(row=1,column = x)
 
-        cnum += len(self.sort_optional)
+    def create_filter_buttons(self):
+        cnum = len(self.filters) + len(self.sort_optional)
 
         #if len(self.filter_controls):
         if len(self.filters):
@@ -413,6 +388,11 @@ class TableUI(Frame):
             #bt = Button(self.filter_frame,text = "Debug",command  = self.debug )
             #bt.grid(row=1,column = cnum +1,padx=5,pady=5)
 
+    def create_tree_body(self):
+
+        # Create Striped Row Tags
+        self.my_tree.tag_configure('oddrow', background=glb.saved_secondary_color)
+        self.my_tree.tag_configure('evenrow', background=glb.saved_primary_color)
 
         order_map = get_order_map(self.table_name,self.df.columns)
         columns = [self.df.columns[x] for x in order_map]
@@ -430,7 +410,7 @@ class TableUI(Frame):
             if column in self.field_maps.keys():
                 link = self.field_maps[column]
                 fn_entry = Combobox(self.record_frame)
-                fn_entry['values'] = tuple(list(link.map_from.keys()))
+                fn_entry['values'] = tuple(list(link.map_from.keys()))  # linkxxx  create_controls
             else:
                 fn_entry = Entry(self.record_frame)
 
@@ -439,7 +419,7 @@ class TableUI(Frame):
                 dateformat = "%Y-%m-%d"
                 fn_entry = tb.DateEntry(self.record_frame, bootstyle="dark",dateformat = dateformat)
                 fn_entry.entry.delete(0, END)
-                self.records.append(fn_entry.entry)  #xxx
+                self.records.append(fn_entry.entry)
             else:
                 self.records.append(fn_entry)
 
@@ -447,14 +427,28 @@ class TableUI(Frame):
 
             x += 1
 
+    def create_action_buttons(self):
         self.update_button.grid(row=0, column=0, padx=10, pady=10)
         self.add_button.grid(row=0, column=1, padx=10, pady=10)
         self.remove_one_button.grid(row=0, column=3, padx=10, pady=10)
         self.select_record_button.grid(row=0, column=7, padx=10, pady=10)
 
 
-        # Add Record Entry Boxes
-        pass
+    def create_controls(self):
+
+        self.my_tree.pack()
+
+        # Configure the Scrollbar
+        self.tree_scrolly.config(command=self.my_tree.yview)
+        #self.tree_scrollx.config(command=self.my_tree.xview)
+        # tree_scroll.config(command=my_tree.xview)
+
+        self.create_filters()
+        self.create_sorters()
+        self.create_filter_buttons()
+        self.create_tree_body()
+        self.create_action_buttons()
+
 
     def sorter_changed(self):
         print("sorter_changed")
@@ -615,7 +609,7 @@ class TableUI(Frame):
 
         return converted_value
 
-    def get_converted_row_values(self): #xxx  converts all but ignored
+    def get_converted_row_values(self):
 
         order_map = get_order_map(self.table_name,self.df.columns)
 
@@ -679,7 +673,7 @@ class TableUI(Frame):
         #    pass
 
         if glb.USE_DF:
-            self.df.loc[len(self.df)] = row_vals  #xxx
+            self.df.loc[len(self.df)] = row_vals
             print("add_record: columns",len(row_vals),self.df.columns)
         if glb.USE_PL:
             pass
