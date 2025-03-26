@@ -55,13 +55,7 @@ class TableUI(Frame):
         # Create a Treeview Scrollbar
         self.tree_scrolly = Scrollbar(self.tree_frame)
         self.tree_scrolly.pack(side=RIGHT, fill=Y)
-        #self.tree_scrollx = Scrollbar(self.tree_frame)
-        #self.tree_scrollx.pack(side=BOTTOM, fill=Y)
 
-        # Create The Treeview
-        #self.my_tree = ttk.Treeview(self.tree_frame, yscrollcommand=self.tree_scrolly.set,
-        #                            #xscrollcommand=self.tree_scrollx.set,
-        #                            selectmode="extended")
 
  # Change font family and size here
 
@@ -108,7 +102,7 @@ class TableUI(Frame):
                 largest = largest_series.iloc(0)[0]
                 for index,row in duplicates.iterrows():
                     if index == record_num:
-                        self.df.loc[record_num,field] = largest + 1
+                        self.df.loc[record_num,field] = largest = largest + 1
 
 
 
@@ -140,12 +134,15 @@ class TableUI(Frame):
 
         self.my_tree['columns'] = tuple(columns)
 
+        column_widths = custom_dict["Tables"].get(self.table_name, {}).get('widths', {})
 
         self.my_tree.column("#0", width=0, stretch=NO)
         for heading in columns:
-            self.my_tree.column(heading,anchor = W, width = 140)
-
-
+            column_width = column_widths.get(heading,None)
+            if column_width is None:
+                self.my_tree.column(heading,anchor = W, width = 140)
+            else:
+                self.my_tree.column(heading,anchor = W, width = column_width)
 
         self.my_tree.heading("#0", text="", anchor=W)
 
@@ -552,8 +549,6 @@ class TableUI(Frame):
 
         order_map = get_order_map(self.table_name, self.filtered_df.columns)
         values, row_last = self.get_converted_row(focus, order_map)
-
-        #values = self.my_tree.item(self.tree_focus(), 'values')
 
         for i,record in enumerate(self.records):
             record.insert(0,values[i])

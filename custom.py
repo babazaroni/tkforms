@@ -25,6 +25,12 @@ class DateSortC():
     def get_ivar(self):
         return self.ivar
 
+class NumSort():
+    def __init__(self,field):
+        self.field = field
+    def get_ivar(self):
+        return True
+
 class Link():
     def __init__(self,source_field,dest_table,match_field,dest_field):
         self.source_field = source_field
@@ -47,8 +53,10 @@ custom_dict ={
                 "width": 2200
                },
           "Client ID":
-                        {"order": [],
+                        {"widths": {"ID":50,"Clients":200},
+                         "order": [],
                          "filters": [],
+                         "unique": ["ID"],
                          "width": 1050
                          },
           "Financials":
@@ -59,23 +67,31 @@ custom_dict ={
                "sort": [ "Client ID","Project ID","Project Title","Task","Source"],
                 "blank_rep": ["Client ID","Project ID","Project Title","Task","Source"],
                "ignore": [],
+               "unique": ["ID"],
                 "width": 1740
                },
           "PM ID":
-              {"order": [],
+              {
+                "order": [],
                "filters": [],
                 #"links": [Link("Client ID", "Client ID", "ID", "Clients")],
-                "width": 1930
+               "unique": ["PM ID"],
+                  "widths": {"PM ID": 70,"Project Manager":300,"Email":400,"Cell Num":170,"Alternate Phone Num":170},
+                  "sort":["PM ID"],
+                "width": 2300
                },
           "Solas Architect Rates":
               {"order": [],
                "filters": [],
                "ignore": [],
                "links": [Link("Architect", "Solas Architects", "ID", "Architects")],
+               "unique": ["ID"],
                 "width": 1740
                },
           "Solas Architects":
-              {"order": [],
+              {
+                "widths": {"ID":50,"Architects":250},
+                "order": [],
                "filters": [],
                "unique": ["ID"],
                 "width": 1100
@@ -90,8 +106,12 @@ custom_dict ={
               "width": 2200
               },
          "Choices":
-             {"order": [],
+             {
+            "widths": {"ID": 50,"Stages":400},
+            "order": [],
               "filters": [],
+              "unique": ["ID"],
+            "sort": ["ID"],
               "width": 1100
               },
 
