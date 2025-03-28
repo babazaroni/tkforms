@@ -1,5 +1,6 @@
 
-
+LINK_BLANK_ALLOWED  = 1
+LINK_NUMERIC_AS_TEXT = 2
 
 class ComboBoxC():
     def __init__(self,field):
@@ -32,13 +33,14 @@ class NumSort():
         return True
 
 class Link():
-    def __init__(self,source_field,dest_table,match_field,dest_field):
+    def __init__(self,source_field,dest_table,match_field,dest_field,flags = None):
         self.source_field = source_field
         self.dest_table = dest_table
         self.match_field = match_field
         self.dest_field = dest_field
         self.map_to = None
         self.map_from = None
+        self.flags = flags
 
 
 
@@ -49,7 +51,11 @@ custom_dict ={
               { "order": ["Client ID","Project ID","Project Title","Completed","Solas Primary"],
                 "filter": [ComboBoxC("Client ID"), ComboBoxC("Project ID"), ComboBoxC("Project Title"),ComboBoxC("Solas Primary")],
                 "sort_optional" : [DateSortC("Update Date")],
-                "links" :  [Link("Client ID","Client ID","ID","Clients")],
+                "links" :  [Link("Client ID","Client ID","ID","Clients"),
+                            Link("PM ID","PM ID","PM ID","Project Manager",[LINK_BLANK_ALLOWED,LINK_NUMERIC_AS_TEXT]),
+                            Link("Solas Primary","Solas Architects","Architects","Architects",[LINK_BLANK_ALLOWED]),
+                            Link("Solas 2nd","Solas Architects","Architects","Architects",[LINK_BLANK_ALLOWED]),
+                            ],
                 "width": 2200
                },
           "Client ID":

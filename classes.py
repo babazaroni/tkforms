@@ -1,3 +1,4 @@
+from operator import truediv
 from tkinter import *
 from tkinter import ttk
 from tkinter.ttk import Combobox
@@ -10,6 +11,7 @@ from tkinter import messagebox
 import ttkbootstrap as tb
 
 import traceback
+import custom
 
 
 class TableUI(Frame):
@@ -75,7 +77,7 @@ class TableUI(Frame):
 
         self.update_button = Button(self.button_frame, text="Update Record", command=self.update_record)
         #self.update_button.pack()
-        self.add_button = Button(self.button_frame, text="Add Record", command=self.add_record)
+        self.add_button = Button(self.button_frame, text="Add Record", command=self.append_record_to_df)
         self.remove_one_button = Button(self.button_frame, text="Remove Record", command=self.remove_one)
         self.select_record_button = Button(self.button_frame, text="Clear Record", command=self.clear_entries)
 
@@ -162,9 +164,18 @@ class TableUI(Frame):
 
             column = self.df.columns[o]
             if column in self.field_maps.keys():
+
                 link = self.field_maps[column]
-                entry = link.map_to[entry]
+
+                if column == "PM ID":
+                    print("get_converted_row pre:",entry,type(entry))
+
+                entry = link.map_to.get(entry,entry)
                 row[o] = entry
+                #print("using field_maps",self.table_name,column,entry,in_map_to)
+
+                if column == "PM ID":
+                    print("get_converted_row post:",entry,type(entry))
 
             if 'datetime' in str(self.filtered_df[self.filtered_df.columns[o]].dtypes):
                 entry = str(entry).split()[0]
@@ -255,11 +266,21 @@ class TableUI(Frame):
     def create_maps(self): # linkxxx  creates map_to and map_from dictionary
         links = custom_dict["Tables"].get(self.table_name, {}).get('links', [])
         for link in links:
-            print("link:",link)
             dest_df = glb.tables_dict[link.dest_table]
             print("dest_df:",dest_df)
-            link.map_to = dict(zip(dest_df[link.match_field],dest_df[link.dest_field]))
-            link.map_from = dict(zip(dest_df[link.dest_field],dest_df[link.match_field]))
+
+            if link.flags is not None and custom.LINK_NUMERIC_AS_TEXT in link.flags:
+                match_column = dest_df[link.match_field].apply(str)
+            else:
+                match_column = dest_df[link.match_field]
+
+            link.map_to = dict(zip(match_column,dest_df[link.dest_field]))
+
+            #link.map_from = dict(zip(dest_df[link.dest_field],dest_df[link.match_field]))
+            link.map_from = dict(zip(dest_df[link.dest_field],match_column))
+            #if link.dest_field == link.match_field:
+            #    link.map_to[''] = ''  # allow blank
+            #    link.map_from[''] = ''
             self.field_maps[link.source_field] = link
 
 
@@ -329,7 +350,7 @@ class TableUI(Frame):
 
         #print("create_filtered_df end:",len(self.filtered_df))
 
-    def combobox_changed(self,event,control,filter_name):
+    def filter_changed(self, event, control, filter_name):
         print("combo_changed")
 
         try:
@@ -357,7 +378,7 @@ class TableUI(Frame):
             fn_entry = Combobox(self.filter_frame,justify=LEFT)
             fn_entry.grid(row=1, column=x, padx=5, pady=5)
             fn_entry.bind("<<ComboboxSelected>>",
-                lambda event, combobox_instance=fn_entry,filter_name = filter.field: self.combobox_changed(event,combobox_instance,filter_name))
+                          lambda event, combobox_instance=fn_entry,filter_name = filter.field: self.filter_changed(event, combobox_instance, filter_name))
             filter.set_control(fn_entry)
 
     def create_sorters(self):
@@ -388,7 +409,7 @@ class TableUI(Frame):
             #bt = Button(self.filter_frame,text = "Debug",command  = self.debug )
             #bt.grid(row=1,column = cnum +1,padx=5,pady=5)
 
-    def create_tree_body(self):
+    def create_record_controls(self):
 
         # Create Striped Row Tags
         self.my_tree.tag_configure('oddrow', background=glb.saved_secondary_color)
@@ -410,7 +431,7 @@ class TableUI(Frame):
             if column in self.field_maps.keys():
                 link = self.field_maps[column]
                 fn_entry = Combobox(self.record_frame)
-                fn_entry['values'] = tuple(list(link.map_from.keys()))  # linkxxx  create_controls
+                fn_entry['values'] = tuple(list(link.map_from.keys()))  # linkxxx  create_controls dropdown values
             else:
                 fn_entry = Entry(self.record_frame)
 
@@ -446,7 +467,7 @@ class TableUI(Frame):
         self.create_filters()
         self.create_sorters()
         self.create_filter_buttons()
-        self.create_tree_body()
+        self.create_record_controls()
         self.create_action_buttons()
 
 
@@ -507,7 +528,8 @@ class TableUI(Frame):
             if isinstance(value, str):
                 formatted_strings.append(f"`{key}` == \"{value}\"");continue
             if isinstance(value,pd.Timestamp):
-                formatted_strings.append(f"`{key}` == '{value}'");continue
+                #formatted_strings.append(f"`{key}` == '{value}'");continue
+                formatted_strings.append(f"`{key}` == @pd.Timestamp('{value}')");continue
             if pd.isna(value):
                 formatted_strings.append(f"`{key}`.isna()");continue
 
@@ -539,7 +561,7 @@ class TableUI(Frame):
 
         focus = self.tree_focus()
 
-        self.selected_record = self.filtered_df.iloc[focus]
+        self.selected_record = self.filtered_df.iloc[focus]  # linkxxx  select_record
 
         order_map = get_order_map(self.table_name, self.filtered_df.columns)
         values, row_last = self.get_converted_row(focus, order_map)
@@ -578,8 +600,8 @@ class TableUI(Frame):
 
         #column_dtype = self.df[self.df.columns[column]].dtype
 
-        print("convert_by_dtype;",column_dtype,new_value)
-        print("new value:",new_value,"dtype:",type(new_value))
+        #print("convert_by_dtype;",column_dtype,new_value)
+        #print("new value:",new_value,"dtype:",type(new_value))
 
         if column_dtype == "bool":
 
@@ -591,25 +613,25 @@ class TableUI(Frame):
             else:
                 new_value = 'True'
 
-            print("its a bool")
+            #print("its a bool")
 
-        print("type",type(column_dtype))
+        #print("type",type(column_dtype))
         if column_dtype == 'float64':
             converted_value = float(new_value)
-            print("its float64")
+            #print("its float64")
         else:
             series = pd.Series([new_value])
-            print("series:",series)
-            print("convert by dtype:",new_value,column_dtype)
-            print("astype:",series.astype(column_dtype))
+            #print("series:",series)
+            #print("convert by dtype:",new_value,column_dtype)
+            #print("astype:",series.astype(column_dtype))
             converted_value = series.astype(column_dtype).iloc[0]
 
         #
-        print("convert_by_dtype returns:",converted_value,type(converted_value))
+        #print("convert_by_dtype returns:",converted_value,type(converted_value))
 
         return converted_value
 
-    def get_converted_row_values(self):
+    def convert_record_to_df(self): # linkxxx convert record values to df values
 
         order_map = get_order_map(self.table_name,self.df.columns)
 
@@ -618,23 +640,51 @@ class TableUI(Frame):
         #row_vals = [0] * len(self.records)
 
         for record,order in zip(self.records,order_map):
+            code = 0
             try:
                 rval = record.entry.get() if 'DateEntry' in str(type(record)) else record.get()
 
                 column = self.df.columns[order]
                 if column in self.field_maps.keys():
+                    code = 1
                     link = self.field_maps[column]
-                    rval = link.map_from[rval]
+                    print("column: {} {}".format(column,link.flags))
+                    if link.flags:
 
-                print("get_converted_row_vals:",rval,column,self.df[column].dtype)
+                        if isinstance(rval,str):
+                            code = 2
+                            print(f"space check: rval {rval}, risspace {rval.isspace()} blank allowed {custom.LINK_BLANK_ALLOWED in link.flags}")
+                            if  (rval == '' or rval.isspace()) and custom.LINK_BLANK_ALLOWED in link.flags:
+                                rval = ''
+                            else:
+                                code = 3
+                                if custom.LINK_NUMERIC_AS_TEXT in link.flags:
+                                    code = 4
+                                    #rval = float(rval)
+                                    #rval = link.map_from[int(rval)]
+                                    rval = link.map_from[rval]
+                                else:
+                                    code = 5
+                                    rval = link.map_from[rval]
+                        else:
+                            code = 6
+                            rval = link.map_from[rval]
+                    else:
+                        code = 7
+                        rval = link.map_from[rval]
+                else:
+                    code = 8
+
+
+                #print("get_converted_row_vals:",rval,column,self.df[column].dtype)
                 cval = self.convert_by_dtype(rval, self.df[column].dtype)
-                print(f"df[{column}.dtype:",self.df[column].dtype)
-                print(f"row_vals[{order}] = {cval}")
+                #print(f"df[{column}.dtype:",self.df[column].dtype)
+                #print(f"row_vals[{order}] = {cval}")
                 row_vals[order] = cval
             except Exception as e:
                 print("get_converted_row_values exception:",e)
                 print(traceback.print_exc())
-                messagebox.showinfo("Notification",f"Invalid format for {self.df.columns[order]}")
+                messagebox.showinfo("Notification",f"Invalid value for {self.df.columns[order]}.  Use dropdown values {code} {rval} {cval}")
 
                 return None
 
@@ -653,7 +703,7 @@ class TableUI(Frame):
 
         return True
 
-    def add_record(self):
+    def append_record_to_df(self):
         if self.blank_check(message = "Record is blank"):
             return
 
@@ -661,9 +711,9 @@ class TableUI(Frame):
 
         order_map = get_order_map(self.table_name,self.df.columns)
 
-        row_vals = self.get_converted_row_values()
+        df_row_vals = self.convert_record_to_df()
 
-        if not row_vals:
+        if not df_row_vals:
             return
 
         #try:
@@ -673,8 +723,8 @@ class TableUI(Frame):
         #    pass
 
         if glb.USE_DF:
-            self.df.loc[len(self.df)] = row_vals
-            print("add_record: columns",len(row_vals),self.df.columns)
+            self.df.loc[len(self.df)] = df_row_vals
+            print("add_record: columns",len(df_row_vals),self.df.columns)
         if glb.USE_PL:
             pass
 
@@ -709,7 +759,7 @@ class TableUI(Frame):
             return
 
 
-        row_vals = self.get_converted_row_values()
+        row_vals = self.convert_record_to_df()  #linkxxx  update_record
 
         if not row_vals:
             return
