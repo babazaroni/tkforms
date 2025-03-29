@@ -129,7 +129,7 @@ class TableUI(Frame):
             self.df.to_sql("[Project Data]", glb.cnn, if_exists='replace', index=False)
 
 
-    def set_tree_columns(self):
+    def create_tree_columns(self):
         order_map = get_order_map(self.table_name,self.df.columns)
 
         columns = [self.df.columns[x] for x in order_map]
@@ -167,15 +167,10 @@ class TableUI(Frame):
 
                 link = self.field_maps[column]
 
-                if column == "PM ID":
-                    print("get_converted_row pre:",entry,type(entry))
-
                 entry = link.map_to.get(entry,entry)
                 row[o] = entry
                 #print("using field_maps",self.table_name,column,entry,in_map_to)
 
-                if column == "PM ID":
-                    print("get_converted_row post:",entry,type(entry))
 
             if 'datetime' in str(self.filtered_df[self.filtered_df.columns[o]].dtypes):
                 entry = str(entry).split()[0]
@@ -605,13 +600,15 @@ class TableUI(Frame):
 
         if column_dtype == "bool":
 
+            5/0
+
             if new_value.lower() not in ['true','false','yes','no']:
                 5/0  # should do a real exception instead
 
             if new_value.capitalize() in ['False','No']:
                 new_value = ''
             else:
-                new_value = 'True'
+                new_value = 'Truex'
 
             #print("its a bool")
 
@@ -665,7 +662,8 @@ class TableUI(Frame):
                                     rval = link.map_from[rval]
                                 else:
                                     code = 5
-                                    rval = link.map_from[rval]
+                                    if custom.LINK_ALLOW_CUSTOM_TEXT not in link.flags:
+                                        rval = link.map_from[rval]
                         else:
                             code = 6
                             rval = link.map_from[rval]

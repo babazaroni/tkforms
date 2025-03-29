@@ -63,7 +63,7 @@ def prompt_for_db():
 
             tableui.create_maps()  # linkxxx create map when table created
             tableui.create_controls()
-            tableui.set_tree_columns()
+            tableui.create_tree_columns()
             tableui.set_filters()
             tableui.create_filtered_df()
 

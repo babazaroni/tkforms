@@ -1,6 +1,7 @@
 
 LINK_BLANK_ALLOWED  = 1
 LINK_NUMERIC_AS_TEXT = 2
+LINK_ALLOW_CUSTOM_TEXT = 3
 
 class ComboBoxC():
     def __init__(self,field):
@@ -55,6 +56,8 @@ custom_dict ={
                             Link("PM ID","PM ID","PM ID","Project Manager",[LINK_BLANK_ALLOWED,LINK_NUMERIC_AS_TEXT]),
                             Link("Solas Primary","Solas Architects","Architects","Architects",[LINK_BLANK_ALLOWED]),
                             Link("Solas 2nd","Solas Architects","Architects","Architects",[LINK_BLANK_ALLOWED]),
+                            Link("Current Stage", "Choices", "Stages", "Stages", [LINK_ALLOW_CUSTOM_TEXT]),
+                            Link("Completed or Cancelled", "Choices", "YesNo", "YesNo", [LINK_ALLOW_CUSTOM_TEXT]),
                             ],
                 "width": 2200
                },
