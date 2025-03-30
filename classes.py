@@ -830,15 +830,13 @@ class TableUI(Frame):
 
 
 
-def get_order_map(table,keys):
-    columns = list(keys)
+def get_order_map2(table,keys):
 
-    default_map = [i for i in range(len(keys))]
+    default_map = list(keys)
 
     for field in custom_dict["Tables"][table].get("ignore",[]):
         try:
-            index = columns.index(field)
-            default_map.remove(index)
+            default_map.remove(field)
         except:
             pass
 
@@ -848,11 +846,42 @@ def get_order_map(table,keys):
         new_map = []
 
         for field in order:
-            index = columns.index(field)
-            new_map.append(index)
-            default_map.remove(index)
+            new_map.append(field)
+            default_map.remove(field)
+
         new_map.extend(default_map)
         return new_map
+
     except:
         print("---------- get order map error --------",table)
         return default_map
+
+def get_order_map(table, keys):
+        columns = list(keys)
+
+        default_map = [i for i in range(len(keys))]
+
+        for field in custom_dict["Tables"][table].get("ignore", []):
+            try:
+                index = columns.index(field)
+                default_map.remove(index)
+            except:
+                pass
+
+        try:
+            order = custom_dict["Tables"][table]["order"]
+
+            new_map = []
+
+            for field in order:
+                index = columns.index(field)
+                new_map.append(index)
+                default_map.remove(index)
+
+            new_map.extend(default_map)
+            return new_map
+
+        except:
+            print("---------- get order map error --------", table)
+            return default_map
+

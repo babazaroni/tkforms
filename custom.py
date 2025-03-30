@@ -107,11 +107,16 @@ custom_dict ={
                },
          "Fees":
              {
-                 "order": ["Client ID", "Project ID", "Project Title", "Fee Phase"],
-                 "filter": [ComboBoxC("Client ID"), ComboBoxC("Project ID"), ComboBoxC("Project Title")],
-                 "ignore": ["IDx"],
+                 "order": ["Client ID", "Project ID","Project Title", "Fee Phase"],
+                 "filter": [ComboBoxC("Client ID"), ComboBoxC("Project ID")],
+                 "ignore": ["ID"],
                  "unique": ["ID"],
-                 "links": [Link("Client ID", "Client ID", "ID", "Clients")],
+                 "links": [Link("Client ID", "Client ID", "ID", "Clients"),
+                           Link("Project ID","Project Data","ID","Project ID"),
+                           Link("Project Title", "Project Data", "ID", "Project Title"),
+                            Link("Fee Phase", "Choices", "Stages", "Stages", [LINK_ALLOW_CUSTOM_TEXT]),
+                           Link("Contract Signed", "Choices", "YesNo", "YesNo", [LINK_ALLOW_CUSTOM_TEXT]),
+                           Link("Type","Choices","Fee Types","Fee Types")],
               "width": 2200
               },
          "Choices":
