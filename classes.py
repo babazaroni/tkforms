@@ -132,7 +132,8 @@ class TableUI(Frame):
     def create_tree_columns(self):
         order_map = get_order_map(self.table_name,self.df.columns)
 
-        columns = [self.df.columns[x] for x in order_map]
+        #columns = [self.df.columns[x] for x in order_map]
+        columns = [x for x in order_map]
 
         self.my_tree['columns'] = tuple(columns)
 
@@ -158,14 +159,15 @@ class TableUI(Frame):
 
         values = []
 
-        for o in order_map:
+        for f in order_map:
+
+            o = self.filtered_df.columns.get_loc(f)
 
             entry = row[o]
 
-            column = self.df.columns[o]
-            if column in self.field_maps.keys():
+            if f in self.field_maps.keys():
 
-                link = self.field_maps[column]
+                link = self.field_maps[f]
 
                 entry = link.map_to.get(entry,entry)
                 row[o] = entry
@@ -178,8 +180,8 @@ class TableUI(Frame):
                     entry = ""
 
             if row_last:
-                col = self.filtered_df.columns[o]
-                if col in self.blank_rep:
+
+                if f in self.blank_rep:
                     if entry == row_last[o]:
                         entry = ""
 
@@ -411,16 +413,17 @@ class TableUI(Frame):
         self.my_tree.tag_configure('evenrow', background=glb.saved_primary_color)
 
         order_map = get_order_map(self.table_name,self.df.columns)
-        columns = [self.df.columns[x] for x in order_map]
+        #columns = [self.df.columns[x] for x in order_map]
 
         num_cols = 3
         # create record frame entries
         x = 0
-        for column in columns:
+        for column in order_map:
 
             fn_label = tb.Label(self.record_frame, text=column,style = "Custom.TLabel",anchor='e')
             fn_label.grid(row=int(x / num_cols), column= 2* (x % num_cols), padx=10, pady=5)
 
+            #print("create_record_controls:",self.table_name,column)
             dtype = self.df[column].dtype
 
             if column in self.field_maps.keys():
@@ -636,12 +639,11 @@ class TableUI(Frame):
 
         #row_vals = [0] * len(self.records)
 
-        for record,order in zip(self.records,order_map):
+        for record,column in zip(self.records,order_map):
             code = 0
             try:
                 rval = record.entry.get() if 'DateEntry' in str(type(record)) else record.get()
 
-                column = self.df.columns[order]
                 if column in self.field_maps.keys():
                     code = 1
                     link = self.field_maps[column]
@@ -682,7 +684,7 @@ class TableUI(Frame):
             except Exception as e:
                 print("get_converted_row_values exception:",e)
                 print(traceback.print_exc())
-                messagebox.showinfo("Notification",f"Invalid value for {self.df.columns[order]}.  Use dropdown values {code} {rval} {cval}")
+                messagebox.showinfo("Notification",f"Invalid value for {column}.  Use dropdown values {code} {rval} {cval}")
 
                 return None
 
@@ -707,18 +709,11 @@ class TableUI(Frame):
 
         self.refresh_df()
 
-        order_map = get_order_map(self.table_name,self.df.columns)
-
         df_row_vals = self.convert_record_to_df()
 
         if not df_row_vals:
             return
 
-        #try:
-        #    row_vals = [ self.convert_by_dtype(self.records[order].get(),self.df[order].dtype) for order in order_map]
-        #except:
-        #    print("add_record: convert_by_dtype failed ")
-        #    pass
 
         if glb.USE_DF:
             self.df.loc[len(self.df)] = df_row_vals
@@ -830,7 +825,7 @@ class TableUI(Frame):
 
 
 
-def get_order_map2(table,keys):
+def get_order_map(table,keys):
 
     default_map = list(keys)
 
@@ -856,7 +851,7 @@ def get_order_map2(table,keys):
         print("---------- get order map error --------",table)
         return default_map
 
-def get_order_map(table, keys):
+def get_order_map2(table, keys):
         columns = list(keys)
 
         default_map = [i for i in range(len(keys))]

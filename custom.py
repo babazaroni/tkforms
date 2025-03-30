@@ -107,7 +107,7 @@ custom_dict ={
                },
          "Fees":
              {
-                 "order": ["Client ID", "Project ID","Project Title", "Fee Phase"],
+                 "order": ["Client ID", "Project ID", "Fee Phase"],
                  "filter": [ComboBoxC("Client ID"), ComboBoxC("Project ID")],
                  "ignore": ["ID"],
                  "unique": ["ID"],
