@@ -3,6 +3,8 @@ from tkinter import *
 from tkinter import ttk
 from tkinter.ttk import Combobox
 
+from sqlalchemy.sql.sqltypes import NULLTYPE
+
 #from commands import *
 from colors import *
 from custom import custom_dict
@@ -31,7 +33,7 @@ class TableUI(Frame):
         #self.df = None
         #self.refresh_df()
 
-        self.selected_record = None
+        self.selected_df_row = None
 
         #print("TableUI: custom:")
         #print(self.custom)
@@ -154,14 +156,30 @@ class TableUI(Frame):
             self.my_tree.heading(heading, text=heading, anchor=W)
 
 
-    def get_converted_row(self,index,order_map,row_last=None):
+    def get_converted_row(self,index,order_map,row_last=None,skip_missing = False):
+
         row = self.filtered_df.iloc[index].tolist()
+        print("get_converted_row:",row)
 
         values = []
 
         for f in order_map:
 
-            o = self.filtered_df.columns.get_loc(f)
+            try:
+                o = self.filtered_df.columns.get_loc(f)
+            except:
+                if not len(values):
+                    print("missing field:",f)
+                if skip_missing:
+                    continue
+
+                if f in self.field_maps.keys():
+                    link = self.field_maps[f]
+                    #print("link info:",link.info_field)
+                    o = self.filtered_df.columns.get_loc(link.info_field)
+                else:
+                    values.append("error")
+                    continue
 
             entry = row[o]
 
@@ -169,8 +187,9 @@ class TableUI(Frame):
 
                 link = self.field_maps[f]
 
+                #if link.info_field is None:
                 entry = link.map_to.get(entry,entry)
-                row[o] = entry
+                #row[o] = entry
                 #print("using field_maps",self.table_name,column,entry,in_map_to)
 
 
@@ -187,7 +206,9 @@ class TableUI(Frame):
 
             values.append(entry)
 
-        return values,row
+        print("get_converted_row values:",values)
+
+        return values
 
 
     def set_tree_body_df(self):
@@ -197,12 +218,14 @@ class TableUI(Frame):
 
         order_map = get_order_map(self.table_name, self.filtered_df.columns)
 
-        row_last = None
+        values = None
 
         for index in range(0, len(self.filtered_df)):
 
-            values,row_last = self.get_converted_row(index,order_map,row_last)
+            values = self.get_converted_row(index,order_map,values)
 
+            print("set_tree_body_df:",index)
+            print("values:",values)
 
             tp = tuple(values)
 
@@ -216,43 +239,6 @@ class TableUI(Frame):
                                     tags=('oddrow',))
 
         self.reqwidth = self.my_tree.winfo_reqwidth()
-
-
-
-    def set_tree_body_pl(self):
-        count = 0
-
-        order_map = get_order_map(self.table_name,self.df.columns)
-
-        dtypes = self.df.columns.d
-
-        for row in self.df.iter_rows():
-
-            values = []
-
-            for o in order_map:
-                entry = row[o]
-
-                if 'datetime' in str(self.df.columns[o].dtypes):
-                    entry = entry.split()[0]
-                    values.append(entry)
-                else:
-                    values.append(entry)
-
-            #Wvalues = [row[o] for o in order_map]
-
-            tp = tuple(values)
-
-            if count % 2 == 0:
-                self.my_tree.insert(parent='', index='end', iid=count, text='',
-                               values=tp,
-                               tags=('evenrow',))
-            else:
-                self.my_tree.insert(parent='', index='end', iid=count, text='',
-                               values=tp,
-                               tags=('oddrow',))
-            # increment counter
-            count += 1
 
     def control_in_filter_stack(self,control):
         for stack_control,name in self.filter_stack:
@@ -272,9 +258,13 @@ class TableUI(Frame):
                 match_column = dest_df[link.match_field]
 
             link.map_to = dict(zip(match_column,dest_df[link.dest_field]))
-
-            #link.map_from = dict(zip(dest_df[link.dest_field],dest_df[link.match_field]))
             link.map_from = dict(zip(dest_df[link.dest_field],match_column))
+
+            if link.info_field is not None:
+                print("create_maps:",link.info_field)
+                print("map_to:",link.map_to)
+                print("map_from:",link.map_from)
+
             #if link.dest_field == link.match_field:
             #    link.map_to[''] = ''  # allow blank
             #    link.map_from[''] = ''
@@ -420,11 +410,16 @@ class TableUI(Frame):
         x = 0
         for column in order_map:
 
+            try:
+                dtype = self.df[column].dtype
+            except:
+                continue
+
             fn_label = tb.Label(self.record_frame, text=column,style = "Custom.TLabel",anchor='e')
             fn_label.grid(row=int(x / num_cols), column= 2* (x % num_cols), padx=10, pady=5)
 
             #print("create_record_controls:",self.table_name,column)
-            dtype = self.df[column].dtype
+
 
             if column in self.field_maps.keys():
                 link = self.field_maps[column]
@@ -510,7 +505,7 @@ class TableUI(Frame):
         return first_visible_index
 
     def search_selected_record(self):
-        sd = self.selected_record.to_dict()
+        sd = self.selected_df_row.to_dict()
 
         formatted_strings = []
 
@@ -559,10 +554,10 @@ class TableUI(Frame):
 
         focus = self.tree_focus()
 
-        self.selected_record = self.filtered_df.iloc[focus]  # linkxxx  select_record
+        self.selected_df_row = self.filtered_df.iloc[focus]  # linkxxx  select_record
 
         order_map = get_order_map(self.table_name, self.filtered_df.columns)
-        values, row_last = self.get_converted_row(focus, order_map)
+        values = self.get_converted_row(focus, order_map,skip_missing=True)
 
         for i,record in enumerate(self.records):
             record.insert(0,values[i])
@@ -631,22 +626,36 @@ class TableUI(Frame):
 
         return converted_value
 
+    def get_record_values(self):
+        return [record.entry.get() if 'DateEntry' in str(type(record)) else record.get() for record in self.records ]
+
     def convert_record_to_df(self): # linkxxx convert record values to df values
 
-        order_map = get_order_map(self.table_name,self.df.columns)
+        order_map = get_order_map(self.table_name,self.df.columns,remove_alias= True)
 
-        row_vals = self.selected_record.tolist()
+        row_vals = self.selected_df_row.tolist()
 
         #row_vals = [0] * len(self.records)
+        cval = None
+
+        print("convert_record_to_df len row_vals",len(row_vals),row_vals)
+        print("convert_record_to_df len records",len(self.get_record_values()),self.get_record_values())
+        print("convert_record_to_df len order_map",len(order_map),order_map)
+
 
         for record,column in zip(self.records,order_map):
+
             code = 0
             try:
                 rval = record.entry.get() if 'DateEntry' in str(type(record)) else record.get()
 
+                print("record column", rval, column)
+
                 if column in self.field_maps.keys():
                     code = 1
                     link = self.field_maps[column]
+                    if link.info_field is not None:
+                        continue
                     print("column: {} {}".format(column,link.flags))
                     if link.flags:
 
@@ -671,16 +680,17 @@ class TableUI(Frame):
                             rval = link.map_from[rval]
                     else:
                         code = 7
+                        print("map_from:",rval,link.map_from)
                         rval = link.map_from[rval]
                 else:
                     code = 8
 
 
-                #print("get_converted_row_vals:",rval,column,self.df[column].dtype)
+                print("get_converted_row_vals:",rval,column,self.df[column].dtype)
                 cval = self.convert_by_dtype(rval, self.df[column].dtype)
                 #print(f"df[{column}.dtype:",self.df[column].dtype)
                 #print(f"row_vals[{order}] = {cval}")
-                row_vals[order] = cval
+                row_vals[self.df.columns.get_loc(column)] = cval
             except Exception as e:
                 print("get_converted_row_values exception:",e)
                 print(traceback.print_exc())
@@ -825,7 +835,7 @@ class TableUI(Frame):
 
 
 
-def get_order_map(table,keys):
+def get_order_map(table,keys,remove_alias = False):
 
     default_map = list(keys)
 
@@ -842,9 +852,19 @@ def get_order_map(table,keys):
 
         for field in order:
             new_map.append(field)
-            default_map.remove(field)
+
+            try:
+                default_map.remove(field)
+            except:
+                pass
 
         new_map.extend(default_map)
+
+        if remove_alias:
+            for link in custom_dict["Tables"][table].get("links", []):
+                if link.info_field:
+                    new_map.remove(link.source_field)
+
         return new_map
 
     except:

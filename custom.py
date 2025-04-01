@@ -34,7 +34,7 @@ class NumSort():
         return True
 
 class Link():
-    def __init__(self,source_field,dest_table,match_field,dest_field,flags = None):
+    def __init__(self,source_field,dest_table,match_field,dest_field,flags = None,info_field = None):
         self.source_field = source_field
         self.dest_table = dest_table
         self.match_field = match_field
@@ -42,6 +42,7 @@ class Link():
         self.map_to = None
         self.map_from = None
         self.flags = flags
+        self.info_field = info_field
 
 
 
@@ -107,16 +108,20 @@ custom_dict ={
                },
          "Fees":
              {
-                 "order": ["Client ID", "Project ID", "Fee Phase"],
+                 #"order": ["Client ID", "Project ID","Project Title","Fee Phase"],
+                 "order": ["Client ID","Project ID","Project Title"],
                  "filter": [ComboBoxC("Client ID"), ComboBoxC("Project ID")],
                  "ignore": ["ID"],
                  "unique": ["ID"],
                  "links": [Link("Client ID", "Client ID", "ID", "Clients"),
                            Link("Project ID","Project Data","ID","Project ID"),
-                           Link("Project Title", "Project Data", "ID", "Project Title"),
-                            Link("Fee Phase", "Choices", "Stages", "Stages", [LINK_ALLOW_CUSTOM_TEXT]),
+                           Link("Project Title", "Project Data", "ID", "Project Title",info_field = "Project ID"),
+                           Link("Fee Phase", "Choices", "Stages", "Stages", [LINK_ALLOW_CUSTOM_TEXT]),
                            Link("Contract Signed", "Choices", "YesNo", "YesNo", [LINK_ALLOW_CUSTOM_TEXT]),
                            Link("Type","Choices","Fee Types","Fee Types")],
+                 "sort": ["Client ID", "Project ID", "Fee Phase"],
+                 "blank_rep": ["Client ID", "Project ID", "Project Title", "Fee Phase"],
+                "widths": {"Project Title": 300,"Client ID":75},
               "width": 2200
               },
          "Choices":
