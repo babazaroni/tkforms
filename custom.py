@@ -109,7 +109,7 @@ custom_dict ={
          "Fees":
              {
                  #"order": ["Client ID", "Project ID","Project Title","Fee Phase"],
-                 "order": ["Client ID","Project ID","Project Title"],
+                 "order": ["Client ID","Project ID","Project Title","Fee Phase","Type","Contract Signed"],
                  "filter": [ComboBoxC("Client ID"), ComboBoxC("Project ID")],
                  "ignore": ["ID"],
                  "unique": ["ID"],
@@ -121,7 +121,7 @@ custom_dict ={
                            Link("Type","Choices","Fee Types","Fee Types")],
                  "sort": ["Client ID", "Project ID", "Fee Phase"],
                  "blank_rep": ["Client ID", "Project ID", "Project Title", "Fee Phase"],
-                "widths": {"Project Title": 300,"Client ID":75},
+                "widths": {"Project Title": 300,"Client ID":75,"Fee Phase":250},
               "width": 2200
               },
          "Choices":

@@ -156,12 +156,12 @@ class TableUI(Frame):
             self.my_tree.heading(heading, text=heading, anchor=W)
 
 
-    def get_converted_row(self,index,order_map,row_last=None,skip_missing = False):
+    def get_converted_row(self,index,order_map,ref_row=None,skip_missing = False):
 
         row = self.filtered_df.iloc[index].tolist()
-        print("get_converted_row:",row)
 
         values = []
+        new_ref_row = []
 
         for f in order_map:
 
@@ -186,29 +186,23 @@ class TableUI(Frame):
             if f in self.field_maps.keys():
 
                 link = self.field_maps[f]
-
-                #if link.info_field is None:
                 entry = link.map_to.get(entry,entry)
-                #row[o] = entry
-                #print("using field_maps",self.table_name,column,entry,in_map_to)
-
 
             if 'datetime' in str(self.filtered_df[self.filtered_df.columns[o]].dtypes):
                 entry = str(entry).split()[0]
                 if entry == "NaT":
                     entry = ""
 
-            if row_last:
+            new_ref_row.append(entry)
 
+            if ref_row:
                 if f in self.blank_rep:
-                    if entry == row_last[o]:
+                    if entry == ref_row[len(values)]:
                         entry = ""
 
             values.append(entry)
 
-        print("get_converted_row values:",values)
-
-        return values
+        return values,new_ref_row
 
 
     def set_tree_body_df(self):
@@ -219,13 +213,11 @@ class TableUI(Frame):
         order_map = get_order_map(self.table_name, self.filtered_df.columns)
 
         values = None
+        ref_row = None
 
         for index in range(0, len(self.filtered_df)):
 
-            values = self.get_converted_row(index,order_map,values)
-
-            print("set_tree_body_df:",index)
-            print("values:",values)
+            values,ref_row = self.get_converted_row(index,order_map,ref_row = ref_row)
 
             tp = tuple(values)
 
@@ -557,7 +549,7 @@ class TableUI(Frame):
         self.selected_df_row = self.filtered_df.iloc[focus]  # linkxxx  select_record
 
         order_map = get_order_map(self.table_name, self.filtered_df.columns)
-        values = self.get_converted_row(focus, order_map,skip_missing=True)
+        values,ref_row = self.get_converted_row(focus, order_map,skip_missing=True)
 
         for i,record in enumerate(self.records):
             record.insert(0,values[i])
@@ -685,8 +677,6 @@ class TableUI(Frame):
                 else:
                     code = 8
 
-
-                print("get_converted_row_vals:",rval,column,self.df[column].dtype)
                 cval = self.convert_by_dtype(rval, self.df[column].dtype)
                 #print(f"df[{column}.dtype:",self.df[column].dtype)
                 #print(f"row_vals[{order}] = {cval}")
