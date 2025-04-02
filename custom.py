@@ -60,6 +60,9 @@ custom_dict ={
                             Link("Current Stage", "Choices", "Stages", "Stages", [LINK_ALLOW_CUSTOM_TEXT]),
                             Link("Completed or Cancelled", "Choices", "YesNo", "YesNo", [LINK_ALLOW_CUSTOM_TEXT]),
                             ],
+                "widths": {"Project Title": 300, "Client ID": 75,"PM ID":300,"Current Stage":300,"Notes":400},
+                "ignore": ["ID"],
+                "unique": ["ID"],
                 "width": 2200
                },
           "Client ID":
@@ -76,7 +79,7 @@ custom_dict ={
                #"sort": ["Client ID","Project ID","Project Title","Task","Source","Description"],
                "sort": [ "Client ID","Project ID","Project Title","Task","Source"],
                 "blank_rep": ["Client ID","Project ID","Project Title","Task","Source"],
-               "ignore": [],
+               "ignore": ["ID"],
                "unique": ["ID"],
                 "width": 1740
                },
@@ -121,7 +124,7 @@ custom_dict ={
                            Link("Type","Choices","Fee Types","Fee Types")],
                  "sort": ["Client ID", "Project ID", "Fee Phase"],
                  "blank_rep": ["Client ID", "Project ID", "Project Title", "Fee Phase"],
-                "widths": {"Project Title": 300,"Client ID":75,"Fee Phase":250},
+                "widths": {"Project Title": 300,"Client ID":75,"Fee Phase":250,"Type":200},
               "width": 2200
               },
          "Choices":

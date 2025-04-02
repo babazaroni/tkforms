@@ -4,7 +4,7 @@ import globals as glb
 def color_init(parser):
 
     (glb.saved_primary_color, glb.saved_secondary_color, glb.saved_highlight_color) = get_colors(parser)
-    print("get_colors: ",glb.saved_highlight_color,glb.saved_secondary_color,glb.saved_primary_color)
+    #print("get_colors: ",glb.saved_highlight_color,glb.saved_secondary_color,glb.saved_primary_color)
 
 def primary_color():
     # Pick Color

@@ -36,7 +36,7 @@ def get_table_order():
             order.append(t)
             source.remove(t)
     order.extend(source)
-    print("get table order:",order)
+
     return order
 
 
@@ -59,7 +59,10 @@ def prompt_for_db():
             tab = ttk.Frame(notebook)
             notebook.add(tab,text = table)
 
-            tableui = TableUI(tab, table,custom_dict["Tables"].get(table,{}))
+
+            tableui = TableUI(root,tab, table,custom_dict["Tables"].get(table,{}))
+
+            tab_table_map[tab] = tableui
 
             tableui.create_maps()  # linkxxx create map when table created
             tableui.create_controls()
@@ -89,10 +92,10 @@ def get_selected_tab_widget():
 
     selected_tab_text = notebook.tab(selected_index, "text")
 
-    width = custom_dict["Tables"].get(selected_tab_text,{}).get('width',1000)
+    #width = custom_dict["Tables"].get(selected_tab_text,{}).get('width',1000)
 
     #root.geometry(f"{width}x960")
-    root.geometry(f"{width}x1100")
+    #root.geometry(f"{width}x1100")
 
     # Get the widget associated with the selected tab (it will be a frame)
 
@@ -118,6 +121,11 @@ def on_tab_changed(event):
     # Get the widget in the selected tab and print its type
     widget_in_selected_tab,max_width = get_selected_tab_widget()
     max_width *= 1.0
+
+    table = tab_table_map[widget_in_selected_tab]
+    root.geometry(f"{max(table.width+30,1000)}x1100")
+    'width'
+
     #root.geometry(f"{int(max_width)}x900")
 
     #print(f"Widget in selected tab: {widget_in_selected_tab} {widget_in_selected_tab.winfo_reqwidth()} ")
@@ -165,6 +173,7 @@ file_path_project.grid(row = 0, column = 1)
 #table_frame = LabelFrame(root,text = "Table")
 #table_frame.pack(fill="x", expand=True, padx=20,pady=5)
 
+tab_table_map = {}
 notebook = ttk.Notebook(root)
 #notebook.pack(fill='both', expand=True)
 notebook.pack()

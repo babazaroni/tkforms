@@ -17,9 +17,10 @@ import custom
 
 
 class TableUI(Frame):
-    def __init__(self,parent,table_name,custom_dict):
+    def __init__(self,root,parent,table_name,custom_dict):
         super().__init__(parent,bg="yellow")
 
+        self.root = root
         self.table_name = table_name
         self.custom = custom_dict
         self.filters = self.custom.get("filter", [])
@@ -57,8 +58,9 @@ class TableUI(Frame):
         self.button_frame.pack(fill="x", expand=True, padx=20)
 
         # Create a Treeview Scrollbar
-        self.tree_scrolly = Scrollbar(self.tree_frame)
+        self.tree_scrolly = Scrollbar(self.tree_frame)  #command=tree.yview
         self.tree_scrolly.pack(side=RIGHT, fill=Y)
+        self.tree_scrolly.bind("<Configure>",self.on_scroll)
 
 
  # Change font family and size here
@@ -89,6 +91,9 @@ class TableUI(Frame):
 
         self.reqwidth = 0
         self.filtered_df = self.df.copy()
+
+    def on_scroll(self):
+        print("scrolled")
 
     def unique_fix(self,record_num):
         uniques = custom_dict["Tables"].get(self.table_name, {}).get('unique', [])
@@ -132,6 +137,7 @@ class TableUI(Frame):
 
 
     def create_tree_columns(self):
+        global root
         order_map = get_order_map(self.table_name,self.df.columns)
 
         #columns = [self.df.columns[x] for x in order_map]
@@ -142,15 +148,24 @@ class TableUI(Frame):
         column_widths = custom_dict["Tables"].get(self.table_name, {}).get('widths', {})
 
         self.my_tree.column("#0", width=0, stretch=NO)
+        total_width = 0
         for heading in columns:
             column_width = column_widths.get(heading,None)
+
             if column_width is None:
-                self.my_tree.column(heading,anchor = W, width = 140)
+                cwidth = 140
             else:
-                self.my_tree.column(heading,anchor = W, width = column_width)
+                cwidth = column_width
+
+            self.my_tree.column(heading,anchor = W, width = cwidth)
+
+            total_width += cwidth
 
         self.my_tree.heading("#0", text="", anchor=W)
 
+        self.width = total_width
+
+        #self.root.geometry(f"{total_width+59}x1100")
 
         for heading in columns:
             self.my_tree.heading(heading, text=heading, anchor=W)
@@ -242,7 +257,7 @@ class TableUI(Frame):
         links = custom_dict["Tables"].get(self.table_name, {}).get('links', [])
         for link in links:
             dest_df = glb.tables_dict[link.dest_table]
-            print("dest_df:",dest_df)
+
 
             if link.flags is not None and custom.LINK_NUMERIC_AS_TEXT in link.flags:
                 match_column = dest_df[link.match_field].apply(str)
@@ -251,11 +266,6 @@ class TableUI(Frame):
 
             link.map_to = dict(zip(match_column,dest_df[link.dest_field]))
             link.map_from = dict(zip(dest_df[link.dest_field],match_column))
-
-            if link.info_field is not None:
-                print("create_maps:",link.info_field)
-                print("map_to:",link.map_to)
-                print("map_from:",link.map_from)
 
             #if link.dest_field == link.match_field:
             #    link.map_to[''] = ''  # allow blank
@@ -521,15 +531,15 @@ class TableUI(Frame):
             formatted_strings.append(f"`{key}` == {value}")
 
         formatted_string = ' & '.join(formatted_strings)
-        print("formatted_string: ",formatted_string)
+        #print("formatted_string: ",formatted_string)
 
 
         row_exists = self.df.query(formatted_string)
-        print("row_exists type:",type(row_exists))
-        print("row_exists:",row_exists)
+        #print("row_exists type:",type(row_exists))
+        #print("row_exists:",row_exists)
 
         if len(row_exists.index):
-            print("row exists, returning:",row_exists.index[0])
+            #print("row exists, returning:",row_exists.index[0])
             return row_exists.index[0]
 
         return None
@@ -556,7 +566,7 @@ class TableUI(Frame):
 
     def blank_check(self,message = None):
         for record in self.records:
-            print("blank check:",record.get())
+
             if record.get() != "":
                 return False
 
@@ -630,30 +640,23 @@ class TableUI(Frame):
         #row_vals = [0] * len(self.records)
         cval = None
 
-        print("convert_record_to_df len row_vals",len(row_vals),row_vals)
-        print("convert_record_to_df len records",len(self.get_record_values()),self.get_record_values())
-        print("convert_record_to_df len order_map",len(order_map),order_map)
-
-
         for record,column in zip(self.records,order_map):
 
             code = 0
             try:
                 rval = record.entry.get() if 'DateEntry' in str(type(record)) else record.get()
 
-                print("record column", rval, column)
-
                 if column in self.field_maps.keys():
                     code = 1
                     link = self.field_maps[column]
                     if link.info_field is not None:
                         continue
-                    print("column: {} {}".format(column,link.flags))
+
                     if link.flags:
 
                         if isinstance(rval,str):
                             code = 2
-                            print(f"space check: rval {rval}, risspace {rval.isspace()} blank allowed {custom.LINK_BLANK_ALLOWED in link.flags}")
+
                             if  (rval == '' or rval.isspace()) and custom.LINK_BLANK_ALLOWED in link.flags:
                                 rval = ''
                             else:
@@ -672,7 +675,7 @@ class TableUI(Frame):
                             rval = link.map_from[rval]
                     else:
                         code = 7
-                        print("map_from:",rval,link.map_from)
+                        #print("map_from:",rval,link.map_from)
                         rval = link.map_from[rval]
                 else:
                     code = 8
@@ -684,8 +687,8 @@ class TableUI(Frame):
             except Exception as e:
                 print("get_converted_row_values exception:",e)
                 print(traceback.print_exc())
-                messagebox.showinfo("Notification",f"Invalid value for {column}.  Use dropdown values {code} {rval} {cval}")
-
+                #messagebox.showinfo("Notification",f"Invalid value for {column}.  Use dropdown values {code} {rval} {cval}")
+                messagebox.showinfo("Notification",f"Invalid value for {column}.  Use dropdown values.")
                 return None
 
         return row_vals
@@ -771,10 +774,6 @@ class TableUI(Frame):
 
 
         self.update_display()
-
-
-        print("update_record")
-        pass
 
     def remove_one(self):
         if self.blank_check():
