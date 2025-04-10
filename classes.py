@@ -39,23 +39,33 @@ class TableUI(Frame):
         #print("TableUI: custom:")
         #print(self.custom)
 
-        self.filtersort_frame = Frame(self)
-        self.filtersort_frame.pack(pady=10)
+        self.master_frame = Frame(self)
+        self.master_frame.grid(row = 0, column = 0)
+
+        self.filtersort_frame = Frame(self.master_frame)
+        self.filtersort_frame.grid(row = 0, column = 0,sticky = 'w')
+        #self.filtersort_frame.pack(pady=10)
+        #self.filtersort_frame.pack(side = LEFT,pady=10)
+        #self.filtersort_frame.pack(anchor = 'nw',pady=10)
+
         self.filter_frame = LabelFrame(self.filtersort_frame,text = "Filter",bg = "red")
         self.filter_frame.grid(row=0,column = 0,padx=5,pady=5)
+        #self.filter_frame.pack(side = LEFT)
         self.sort_frame = LabelFrame(self.filtersort_frame,text = "Sort",bg = "red")
         self.sort_frame.grid(row = 0,column = 1,padx=5,pady=5)
+
+        #self.sort_frame.pack()
         self.filter_command_frame = LabelFrame(self.filtersort_frame, bg="red")
         self.filter_command_frame.grid(row=0, column=2, padx=5, pady=5)
 
-        self.tree_frame = LabelFrame(self,text = table_name,bg = "green")
-        self.tree_frame.pack(pady=10)
+        self.tree_frame = LabelFrame(self.master_frame,text = table_name,bg = "green")
+        self.tree_frame.grid(row = 1,column = 0,sticky = "w",pady=10)
 
-        self.record_frame = LabelFrame(self, text = "Record")
-        self.record_frame.pack(fill="x", expand=True, padx=20)
+        self.record_frame = LabelFrame(self.master_frame, text = "Record")
+        self.record_frame.grid(row = 2, column = 0, sticky = "w",padx=20)
 
-        self.button_frame = LabelFrame(self, text = "Actions")
-        self.button_frame.pack(fill="x", expand=True, padx=20)
+        self.button_frame = LabelFrame(self.master_frame, text = "Actions")
+        self.button_frame.grid(row = 3, column = 0, sticky = "w",padx=20)
 
         # Create a Treeview Scrollbar
         self.tree_scrolly = Scrollbar(self.tree_frame)  #command=tree.yview
