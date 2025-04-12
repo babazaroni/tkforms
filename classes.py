@@ -40,7 +40,7 @@ class TableUI(Frame):
         #print(self.custom)
 
         self.master_frame = Frame(self)
-        self.master_frame.grid(row = 0, column = 0)
+        self.master_frame.grid(row = 0, column = 0,padx = 20)
 
         self.filtersort_frame = Frame(self.master_frame)
         self.filtersort_frame.grid(row = 0, column = 0,sticky = 'w')
@@ -62,15 +62,15 @@ class TableUI(Frame):
         self.tree_frame.grid(row = 1,column = 0,sticky = "w",pady=10)
 
         self.record_frame = LabelFrame(self.master_frame, text = "Record")
-        self.record_frame.grid(row = 2, column = 0, sticky = "w",padx=20)
+        self.record_frame.grid(row = 2, column = 0, sticky = "w",padx=20,pady=20)
 
         self.button_frame = LabelFrame(self.master_frame, text = "Actions")
-        self.button_frame.grid(row = 3, column = 0, sticky = "w",padx=20)
+        self.button_frame.grid(row = 3, column = 0, sticky = "w",padx=20,pady=20)
 
         # Create a Treeview Scrollbar
         self.tree_scrolly = Scrollbar(self.tree_frame)  #command=tree.yview
         self.tree_scrolly.pack(side=RIGHT, fill=Y)
-        self.tree_scrolly.bind("<Configure>",self.on_scroll)
+        #self.tree_scrolly.bind("<Configure>",self.on_scroll)
 
 
  # Change font family and size here
@@ -417,9 +417,10 @@ class TableUI(Frame):
         order_map = get_order_map(self.table_name,self.df.columns)
         #columns = [self.df.columns[x] for x in order_map]
 
-        num_cols = 3
-        # create record frame entries
-        x = 0
+        labels = []
+        entries = []
+
+
         for column in order_map:
 
             try:
@@ -428,7 +429,9 @@ class TableUI(Frame):
                 continue
 
             fn_label = tb.Label(self.record_frame, text=column,style = "Custom.TLabel",anchor='e')
-            fn_label.grid(row=int(x / num_cols), column= 2* (x % num_cols), padx=10, pady=5)
+            labels.append(fn_label)
+
+
 
             #print("create_record_controls:",self.table_name,column)
 
@@ -449,9 +452,27 @@ class TableUI(Frame):
             else:
                 self.records.append(fn_entry)
 
-            fn_entry.grid(row=int(x / num_cols), column=2 * (x % num_cols) + 1, padx=10, pady=5)
+            entries.append(fn_entry)
 
+
+        num_cols = 1
+
+        if len(labels) == 2:
+            num_cols = 2
+
+        if len(labels) == 4:
+            num_cols = 2
+
+        if len(labels) > 4:
+            num_cols = 3
+
+        x = 0
+
+        for label,entry in zip(labels,entries):
+            label.grid(row=int(x / num_cols), column= 2* (x % num_cols), padx=10, pady=5)
+            entry.grid(row=int(x / num_cols), column=2 * (x % num_cols) + 1, padx=10, pady=5)
             x += 1
+
 
     def create_action_buttons(self):
         self.update_button.grid(row=0, column=0, padx=10, pady=10)
@@ -863,6 +884,8 @@ def get_order_map(table,keys,remove_alias = False):
             for link in custom_dict["Tables"][table].get("links", []):
                 if link.info_field:
                     new_map.remove(link.source_field)
+
+        print("get_order_map:",table,new_map)
 
         return new_map
 

@@ -50,7 +50,7 @@ custom_dict ={
     "TableOrder":["Project Data","Client ID","PM ID","Solas Architects","Solas Architect Rates","Financials"],
     "Tables":
         {"Project Data":
-              { "order": ["Client ID","Project ID","Project Title","Completed","Solas Primary"],
+              { "order": ["Client ID","Project ID","Project Title","Completed %","Completed or Cancelled","Solas Primary"],
                 "filter": [ComboBoxC("Client ID"), ComboBoxC("Project ID"), ComboBoxC("Project Title"),ComboBoxC("Solas Primary")],
                 "sort_optional" : [DateSortC("Update Date")],
                 "links" :  [Link("Client ID","Client ID","ID","Clients"),
@@ -86,19 +86,22 @@ custom_dict ={
           "PM ID":
               {
                 "order": [],
-               "filters": [],
+               "filter": [],
+                "links": [Link("Client ID", "Client ID", "ID", "Clients",[LINK_NUMERIC_AS_TEXT])],
                 #"links": [Link("Client ID", "Client ID", "ID", "Clients")],
                "unique": ["PM ID"],
-                  "widths": {"PM ID": 70,"Project Manager":300,"Email":400,"Cell Num":170,"Alternate Phone Num":170},
-                  "sort":["PM ID"],
+                "ignore": ["PM ID"],
+                "widths": {"PM ID": 70,"Project Manager":300,"Email":400,"Cell Num":170,"Alternate Phone Num":170},
+                "sort":["PM ID"],
                 "width": 2300
                },
           "Solas Architect Rates":
               {"order": [],
-               "filters": [],
-               "ignore": [],
+               "filter": [ComboBoxC("Architect")],
+               "sort_optional": [DateSortC("Rate Start Date")],
                "links": [Link("Architect", "Solas Architects", "ID", "Architects")],
                "unique": ["ID"],
+               "ignore": ["ID"],
                 "width": 1740
                },
           "Solas Architects":
@@ -112,7 +115,7 @@ custom_dict ={
          "Fees":
              {
                  #"order": ["Client ID", "Project ID","Project Title","Fee Phase"],
-                 "order": ["Client ID","Project ID","Project Title","Fee Phase","Type","Contract Signed"],
+                 "order": ["Client ID","Project ID","Project Title","Fee Phase","Consultants","Contract Signed"],
                  "filter": [ComboBoxC("Client ID"), ComboBoxC("Project ID")],
                  "ignore": ["ID"],
                  "unique": ["ID"],
@@ -121,7 +124,7 @@ custom_dict ={
                            Link("Project Title", "Project Data", "ID", "Project Title",info_field = "Project ID"),
                            Link("Fee Phase", "Choices", "Stages", "Stages", [LINK_ALLOW_CUSTOM_TEXT]),
                            Link("Contract Signed", "Choices", "YesNo", "YesNo", [LINK_ALLOW_CUSTOM_TEXT]),
-                           Link("Type","Choices","Fee Types","Fee Types")],
+                           Link("Consultants","Choices","Fee Types","Fee Types")],
                  "sort": ["Client ID", "Project ID", "Fee Phase"],
                  "blank_rep": ["Client ID", "Project ID", "Project Title", "Fee Phase"],
                 "widths": {"Project Title": 300,"Client ID":75,"Fee Phase":250,"Type":200},

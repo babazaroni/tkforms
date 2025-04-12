@@ -123,8 +123,18 @@ def on_tab_changed(event):
     max_width *= 1.0
 
     table = tab_table_map[widget_in_selected_tab]
-    root.geometry(f"{max(table.width+30,1000)}x1100")
-    'width'
+
+    x = table.master_frame.winfo_height()
+    print("height:",x)
+    print("pos: y",table.master_frame.winfo_y())
+    print("pos: x",table.master_frame.winfo_x())
+
+    root.geometry(f"{max(table.width+100,1000)}x1100")
+
+    #root.geometry(f())
+
+
+    #'width'
 
     #root.geometry(f"{int(max_width)}x900")
 
@@ -176,7 +186,7 @@ file_path_project.grid(row = 0, column = 1)
 tab_table_map = {}
 notebook = ttk.Notebook(root)
 #notebook.pack(fill='both', expand=True)
-notebook.pack()
+notebook.pack(padx = 20)
 
 notebook.bind("<<NotebookTabChanged>>", on_tab_changed)
 # Configure the font for Notebook tabs
