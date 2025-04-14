@@ -44,6 +44,12 @@ class Link():
         self.flags = flags
         self.info_field = info_field
 
+    def __str__(self):
+        return f"source field: {self.source_field}\ndest_table:   {self.dest_table}\nmatch_field:  {self.match_field}\ndest_field:   {self.dest_field} \nflags:        {self.flags}"
+
+
+
+
 
 
 custom_dict ={

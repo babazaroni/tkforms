@@ -15,6 +15,14 @@ import ttkbootstrap as tb
 import traceback
 import custom
 
+class SpecialDict(dict):
+    def __setitem__(self, key, value):
+        if not key in self:
+            super(SpecialDict, self).__setitem__(key, value)
+        else:
+            print("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx  duplicate key: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",key,value)
+            return
+            raise Exception("Cannot overwrite key!") # You can make your own type here if needed
 
 class TableUI(Frame):
     def __init__(self,root,parent,table_name,custom_dict):
@@ -268,19 +276,34 @@ class TableUI(Frame):
         for link in links:
             dest_df = glb.tables_dict[link.dest_table]
 
+            #print("create_maps link:")
+            #print(link)
 
             if link.flags is not None and custom.LINK_NUMERIC_AS_TEXT in link.flags:
-                match_column = dest_df[link.match_field].apply(str)
+                match_column = dest_df[link.match_field].apply(str)[::-1]
+                print("convert to str:")
             else:
-                match_column = dest_df[link.match_field]
+                match_column = dest_df[link.match_field][::-1]
 
-            link.map_to = dict(zip(match_column,dest_df[link.dest_field]))
-            link.map_from = dict(zip(dest_df[link.dest_field],match_column))
+            #print("match_column:")
+            #print(match_column)
+
+            dest_field_reversed = dest_df[link.dest_field][::-1]
+
+            # the series are reversed so duplicate items will be replaced by items early in list
+
+            link.map_to = dict(zip(match_column,dest_field_reversed))
+            link.map_from = dict(zip(dest_field_reversed,match_column))
+
+            #print("create_maps map_to:",link.map_to)
+            #print("create_maps map_from:",link.map_from)
 
             #if link.dest_field == link.match_field:
             #    link.map_to[''] = ''  # allow blank
             #    link.map_from[''] = ''
             self.field_maps[link.source_field] = link
+
+        #print("exiting create_maps")
 
 
     def get_linked_entries(self,filter,unique_entries):
@@ -677,11 +700,15 @@ class TableUI(Frame):
             try:
                 rval = record.entry.get() if 'DateEntry' in str(type(record)) else record.get()
 
+                #print("record,column:", rval, column)
+
                 if column in self.field_maps.keys():
                     code = 1
                     link = self.field_maps[column]
                     if link.info_field is not None:
                         continue
+
+                    #print("convert_record_to_df link map_from:",link.map_from)
 
                     if link.flags:
 
@@ -791,6 +818,10 @@ class TableUI(Frame):
         if not row_vals:
             return
 
+
+        print("row_vals:",row_vals)
+        print("update record is not saving")
+        return
         #print("update_record", self.tree_focus())
         #index = self.filtered_df.iloc[self.tree_focus()].name
 
@@ -885,7 +916,7 @@ def get_order_map(table,keys,remove_alias = False):
                 if link.info_field:
                     new_map.remove(link.source_field)
 
-        print("get_order_map:",table,new_map)
+        #print("get_order_map:",table,new_map)
 
         return new_map
 
