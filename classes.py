@@ -115,21 +115,40 @@ class TableUI(Frame):
 
     def unique_fix(self,record_num):
         uniques = custom_dict["Tables"].get(self.table_name, {}).get('unique', [])
-        if not len(uniques):
-            return
 
-        for field in uniques:
+        for fields in uniques:
 
-            column = self.df[field]
+            duplicates = self.df[fields][self.df[fields].duplicated()]
 
-            duplicates = self.df[column.isin(column[column.duplicated()])].sort_values(field)
+            if duplicates.empty:
+                continue
 
-            if not duplicates.empty:
+            if len(fields) == 1 and self.df[fields[0]].dtype in ['int64']:
+                column = self.df[fields[0]]
                 largest_series = column.nlargest(1)
                 largest = largest_series.iloc(0)[0]
                 for index,row in duplicates.iterrows():
                     if index == record_num:
-                        self.df.loc[record_num,field] = largest = largest + 1
+                        self.df.loc[record_num,fields[0]] = largest = largest + 1
+            else:
+                #if pd.api.types.is_string_dtype(self.df[field]):
+
+                    s = duplicates.iloc[0]
+
+                    links = custom_dict["Tables"].get(self.table_name, {}).get('links', [])
+
+                    duplicate_msg = ''
+                    for idx, val in s.items():
+                        for link in links:
+                            if idx == link.source_field:
+                                val = link.map_to[val]
+                        duplicate_msg += f"{idx}={val} "
+
+
+                    messagebox.showinfo("Notification",f"Multiple entries for {duplicate_msg}")
+                    return False
+
+        return True
 
 
 
@@ -782,7 +801,8 @@ class TableUI(Frame):
         if glb.USE_PL:
             pass
 
-        self.unique_fix(len(self.df)-1)
+        if not self.unique_fix(len(self.df)-1):
+            return
 
         self.save_df()
 
@@ -818,22 +838,18 @@ class TableUI(Frame):
         if not row_vals:
             return
 
-
-        print("row_vals:",row_vals)
-        print("update record is not saving")
-        return
-        #print("update_record", self.tree_focus())
-        #index = self.filtered_df.iloc[self.tree_focus()].name
+        last_row_vals = self.df.iloc[record_num]
 
         if glb.USE_DF:
             self.df.iloc[record_num] = row_vals
         if glb.USE_PL:
             pass
 
-        self.unique_fix(record_num)
+        if not self.unique_fix(record_num):
+            self.df.iloc[record_num] = last_row_vals
+            return
 
         self.save_df()
-
 
         self.update_display()
 

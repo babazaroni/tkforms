@@ -68,14 +68,14 @@ custom_dict ={
                             ],
                 "widths": {"Project Title": 300, "Client ID": 75,"PM ID":300,"Current Stage":300,"Notes":400},
                 "ignore": ["ID"],
-                "unique": ["ID"],
+                "unique": [["ID"],["Client ID","Project ID"]],
                 "width": 2200
                },
           "Client ID":
                         {"widths": {"ID":50,"Clients":200},
                          "order": [],
                          "filters": [],
-                         "unique": ["ID"],
+                         "unique": [["ID"]],
                          "width": 1050
                          },
           "Financials":
@@ -86,7 +86,7 @@ custom_dict ={
                "sort": [ "Client ID","Project ID","Project Title","Task","Source"],
                 "blank_rep": ["Client ID","Project ID","Project Title","Task","Source"],
                "ignore": ["ID"],
-               "unique": ["ID"],
+               "unique": [["ID"]],
                 "width": 1740
                },
           "PM ID":
@@ -95,7 +95,7 @@ custom_dict ={
                "filter": [],
                 "links": [Link("Client ID", "Client ID", "ID", "Clients",[LINK_NUMERIC_AS_TEXT])],
                 #"links": [Link("Client ID", "Client ID", "ID", "Clients")],
-               "unique": ["PM ID"],
+               "unique": [["PM ID"]],
                 "ignore": ["PM ID"],
                 "widths": {"PM ID": 70,"Project Manager":300,"Email":400,"Cell Num":170,"Alternate Phone Num":170},
                 "sort":["PM ID"],
@@ -106,7 +106,7 @@ custom_dict ={
                "filter": [ComboBoxC("Architect")],
                "sort_optional": [DateSortC("Rate Start Date")],
                "links": [Link("Architect", "Solas Architects", "ID", "Architects")],
-               "unique": ["ID"],
+               "unique": [["ID"]],
                "ignore": ["ID"],
                 "width": 1740
                },
@@ -115,7 +115,7 @@ custom_dict ={
                 "widths": {"ID":50,"Architects":250},
                 "order": [],
                "filters": [],
-               "unique": ["ID"],
+               "unique": [["ID"]],
                 "width": 1100
                },
          "Fees":
@@ -124,7 +124,7 @@ custom_dict ={
                  "order": ["Client ID","Project ID","Project Title","Fee Phase","Consultants","Contract Signed"],
                  "filter": [ComboBoxC("Client ID"), ComboBoxC("Project ID")],
                  "ignore": ["ID"],
-                 "unique": ["ID"],
+                 "unique": [["ID"]],
                  "links": [Link("Client ID", "Client ID", "ID", "Clients"),
                            Link("Project ID","Project Data","ID","Project ID"),
                            Link("Project Title", "Project Data", "ID", "Project Title",info_field = "Project ID"),
@@ -141,7 +141,7 @@ custom_dict ={
             "widths": {"ID": 50,"Stages":400},
             "order": [],
               "filters": [],
-              "unique": ["ID"],
+              "unique": [["ID"]],
             "sort": ["ID"],
               "width": 1100
               },
