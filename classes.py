@@ -797,7 +797,7 @@ class TableUI(Frame):
 
         if glb.USE_DF:
             self.df.loc[len(self.df)] = df_row_vals
-            print("add_record: columns",len(df_row_vals),self.df.columns)
+
         if glb.USE_PL:
             pass
 
