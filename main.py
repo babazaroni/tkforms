@@ -31,6 +31,12 @@ def set_tablex(table):
 def get_table_order():
     order = []
     source = list(glb.tables_dict.keys())
+    ignore = custom_dict["TableIgnore"]
+
+    for i in ignore:
+        if i in source:
+            source.remove(i)
+
     for t in custom_dict["TableOrder"]:
         if t in source:
             order.append(t)

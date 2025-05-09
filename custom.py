@@ -53,7 +53,8 @@ class Link():
 
 
 custom_dict ={
-    "TableOrder":["Project Data","Client ID","PM ID","Solas Architects","Solas Architect Rates","Financials"],
+    "TableOrder":["Project Data","Client ID","PM ID","Solas Architects","Solas Architect Rates","Fees","Dropdowns"],
+    "TableIgnore":["Financials"],
     "Tables":
         {"Project Data":
               { "order": ["Client ID","Project ID","Project Title","Completed %","Completed or Cancelled","Solas Primary"],
@@ -63,8 +64,8 @@ custom_dict ={
                             Link("PM ID","PM ID","PM ID","Project Manager",[LINK_BLANK_ALLOWED,LINK_NUMERIC_AS_TEXT]),
                             Link("Solas Primary","Solas Architects","Architects","Architects",[LINK_BLANK_ALLOWED]),
                             Link("Solas 2nd","Solas Architects","Architects","Architects",[LINK_BLANK_ALLOWED]),
-                            Link("Current Stage", "Choices", "Stages", "Stages", [LINK_ALLOW_CUSTOM_TEXT]),
-                            Link("Completed or Cancelled", "Choices", "YesNo", "YesNo", [LINK_ALLOW_CUSTOM_TEXT]),
+                            Link("Current Stage", "Dropdowns", "Fee Phase", "Fee Phase", [LINK_ALLOW_CUSTOM_TEXT]),
+                            Link("Completed or Cancelled", "Dropdowns", "YesNo", "YesNo", [LINK_ALLOW_CUSTOM_TEXT]),
                             ],
                 "widths": {"Project Title": 300, "Client ID": 75,"PM ID":300,"Current Stage":300,"Notes":400},
                 "ignore": ["ID"],
@@ -128,17 +129,17 @@ custom_dict ={
                  "links": [Link("Client ID", "Client ID", "ID", "Clients"),
                            Link("Project ID","Project Data","ID","Project ID"),
                            Link("Project Title", "Project Data", "ID", "Project Title",info_field = "Project ID"),
-                           Link("Fee Phase", "Choices", "Stages", "Stages", [LINK_ALLOW_CUSTOM_TEXT]),
-                           Link("Contract Signed", "Choices", "YesNo", "YesNo", [LINK_ALLOW_CUSTOM_TEXT]),
-                           Link("Consultants","Choices","Fee Types","Fee Types")],
+                           Link("Fee Phase", "Dropdowns", "Fee Phase", "Fee Phase", [LINK_ALLOW_CUSTOM_TEXT]),
+                           Link("Contract Signed", "Dropdowns", "YesNo", "YesNo", [LINK_ALLOW_CUSTOM_TEXT]),
+                           Link("Consultants","Dropdowns","Consultants","Consultants")],
                  "sort": ["Client ID", "Project ID", "Fee Phase"],
                  "blank_rep": ["Client ID", "Project ID", "Project Title", "Fee Phase"],
                 "widths": {"Project Title": 300,"Client ID":75,"Fee Phase":250,"Type":200},
               "width": 2200
               },
-         "Choices":
+         "Dropdowns":
              {
-            "widths": {"ID": 50,"Stages":400},
+            "widths": {"ID": 50,"Fee Phase":400},
             "order": [],
               "filters": [],
               "unique": [["ID"]],

@@ -120,6 +120,8 @@ class TableUI(Frame):
 
             duplicates = self.df[fields][self.df[fields].duplicated()]
 
+            print("unique_fix duplicates",duplicates)
+
             if duplicates.empty:
                 continue
 
@@ -790,6 +792,8 @@ class TableUI(Frame):
         self.refresh_df()
 
         df_row_vals = self.convert_record_to_df()
+
+        print("append_record_to_df:",df_row_vals)
 
         if not df_row_vals:
             return
