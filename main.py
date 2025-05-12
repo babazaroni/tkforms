@@ -41,6 +41,7 @@ def get_table_order():
         if t in source:
             order.append(t)
             source.remove(t)
+
     order.extend(source)
 
     return order
@@ -136,6 +137,8 @@ def on_tab_changed(event):
     print("pos: x",table.master_frame.winfo_x())
 
     root.geometry(f"{max(table.width+100,1000)}x1100")
+
+    table.unique_fix(None)
 
     #root.geometry(f())
 

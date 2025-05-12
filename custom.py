@@ -139,12 +139,13 @@ custom_dict ={
               },
          "Dropdowns":
              {
+            "order": ["Fee Phase","Consultants"],
             "widths": {"ID": 50,"Fee Phase":400},
-            "order": [],
-              "filters": [],
-              "unique": [["ID"]],
+            "filters": [],
+            "unique": [["ID"]],
+            "ignore": ["ID"],
             "sort": ["ID"],
-              "width": 1100
+            "width": 1100
               },
 
         }}

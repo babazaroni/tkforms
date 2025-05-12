@@ -126,6 +126,10 @@ class TableUI(Frame):
                 continue
 
             if len(fields) == 1 and self.df[fields[0]].dtype in ['int64']:
+
+                if record_num is None:
+                    return True
+
                 column = self.df[fields[0]]
                 largest_series = column.nlargest(1)
                 largest = largest_series.iloc(0)[0]
