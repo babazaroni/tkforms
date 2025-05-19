@@ -710,11 +710,32 @@ class TableUI(Frame):
     def get_record_values(self):
         return [record.entry.get() if 'DateEntry' in str(type(record)) else record.get() for record in self.records ]
 
+    def default_value(self,dtype):
+        if pd.api.types.is_integer_dtype(dtype):
+            return 0
+        elif pd.api.types.is_float_dtype(dtype):
+            return 0.0
+        elif pd.api.types.is_bool_dtype(dtype):
+            return False
+        elif pd.api.types.is_datetime64_any_dtype(dtype):
+            return pd.Timestamp(0)
+        else:
+            return ''  # default for object or string types
+
+    # Create Series with default values
+
+
+    def create_default_row(self):
+        default_series = pd.Series({col: self.default_value(dtype) for col, dtype in self.filtered_df.dtypes.items()})
+        return default_series.tolist()
+
     def convert_record_to_df(self): # linkxxx convert record values to df values
 
         order_map = get_order_map(self.table_name,self.df.columns,remove_alias= True)
 
-        row_vals = self.selected_df_row.tolist()
+        #row_vals = self.selected_df_row.tolist()
+
+        row_vals = self.create_default_row()
 
         #row_vals = [0] * len(self.records)
         cval = None
@@ -947,33 +968,4 @@ def get_order_map(table,keys,remove_alias = False):
     except:
         print("---------- get order map error --------",table)
         return default_map
-
-def get_order_map2(table, keys):
-        columns = list(keys)
-
-        default_map = [i for i in range(len(keys))]
-
-        for field in custom_dict["Tables"][table].get("ignore", []):
-            try:
-                index = columns.index(field)
-                default_map.remove(index)
-            except:
-                pass
-
-        try:
-            order = custom_dict["Tables"][table]["order"]
-
-            new_map = []
-
-            for field in order:
-                index = columns.index(field)
-                new_map.append(index)
-                default_map.remove(index)
-
-            new_map.extend(default_map)
-            return new_map
-
-        except:
-            print("---------- get order map error --------", table)
-            return default_map
 
