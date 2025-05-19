@@ -466,7 +466,7 @@ class TableUI(Frame):
         #columns = [self.df.columns[x] for x in order_map]
 
         labels = []
-        entries = []
+        self.entries = []
 
 
         for column in order_map:
@@ -479,15 +479,13 @@ class TableUI(Frame):
             fn_label = tb.Label(self.record_frame, text=column,style = "Custom.TLabel",anchor='e')
             labels.append(fn_label)
 
-
-
             #print("create_record_controls:",self.table_name,column)
 
 
             if column in self.field_maps.keys():
-                link = self.field_maps[column]
+#                link = self.field_maps[column]
                 fn_entry = Combobox(self.record_frame)
-                fn_entry['values'] = tuple(list(link.map_from.keys()))  # linkxxx  create_controls dropdown values
+                #fn_entry['values'] = tuple(list(link.map_from.keys()))  # linkxxx  create_controls dropdown values
             else:
                 fn_entry = Entry(self.record_frame)
 
@@ -500,7 +498,7 @@ class TableUI(Frame):
             else:
                 self.records.append(fn_entry)
 
-            entries.append(fn_entry)
+            self.entries.append(fn_entry)
 
 
         num_cols = 1
@@ -516,10 +514,32 @@ class TableUI(Frame):
 
         x = 0
 
-        for label,entry in zip(labels,entries):
+        for label,entry in zip(labels,self.entries):
             label.grid(row=int(x / num_cols), column= 2* (x % num_cols), padx=10, pady=5)
             entry.grid(row=int(x / num_cols), column=2 * (x % num_cols) + 1, padx=10, pady=5)
             x += 1
+
+    def dropdowns_init(self):
+
+        order_map = get_order_map(self.table_name,self.df.columns)
+
+        x = 0
+
+        for column in order_map:
+
+            try:
+                dtype = self.df[column].dtype
+            except:
+                continue
+
+            if column in self.field_maps.keys():
+
+                link = self.field_maps[column]
+
+                self.entries[x]['values'] = tuple(list(link.map_from.keys()))  # linkxxx  create_controls dropdown values
+
+            x += 1
+
 
 
     def create_action_buttons(self):
@@ -542,6 +562,7 @@ class TableUI(Frame):
         self.create_sorters()
         self.create_filter_buttons()
         self.create_record_controls()
+        self.dropdowns_init()
         self.create_action_buttons()
 
 
