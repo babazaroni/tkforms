@@ -144,7 +144,6 @@ custom_dict ={
             "filters": [],
             "unique": [["ID"]],
             "ignore": ["ID"],
-            "sort": ["ID"],
             "width": 1100
               },
 

@@ -71,7 +71,7 @@ def prompt_for_db():
 
             tab_table_map[tab] = tableui
 
-            tableui.create_maps()  # linkxxx create map when table created
+            tableui.create_maps()
             tableui.create_controls()
             tableui.create_tree_columns()
             tableui.set_filters()
@@ -83,6 +83,9 @@ def prompt_for_db():
                 tableui.set_tree_body_pl()
 
             tableui.grid(row=0, column=0,sticky = "w")
+
+        for table in tab_table_map.values():
+            table.set_tables(tab_table_map.values())
 
 
 

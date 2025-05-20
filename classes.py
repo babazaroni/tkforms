@@ -15,6 +15,8 @@ import ttkbootstrap as tb
 import traceback
 import custom
 
+##rom main import tab_table_map  # this causes circular problems
+
 class SpecialDict(dict):
     def __setitem__(self, key, value):
         if not key in self:
@@ -112,6 +114,9 @@ class TableUI(Frame):
 
     def on_scroll(self):
         print("scrolled")
+
+    def set_tables(self,tables):
+        self.tables = tables
 
     def unique_fix(self,record_num):
         uniques = custom_dict["Tables"].get(self.table_name, {}).get('unique', [])
@@ -483,9 +488,7 @@ class TableUI(Frame):
 
 
             if column in self.field_maps.keys():
-#                link = self.field_maps[column]
                 fn_entry = Combobox(self.record_frame)
-                #fn_entry['values'] = tuple(list(link.map_from.keys()))  # linkxxx  create_controls dropdown values
             else:
                 fn_entry = Entry(self.record_frame)
 
@@ -536,7 +539,11 @@ class TableUI(Frame):
 
                 link = self.field_maps[column]
 
-                self.entries[x]['values'] = tuple(list(link.map_from.keys()))  # linkxxx  create_controls dropdown values
+                dropdown_list = list(link.map_from.keys())[::-1]  #reverse the list because it went in the dict reversed
+
+                print("setting dropdown:",column,dropdown_list)
+
+                self.entries[x]['values'] = tuple(dropdown_list)  # linkxxx  create_controls dropdown values
 
             x += 1
 
@@ -860,7 +867,11 @@ class TableUI(Frame):
 
         #self.delete_and_replace()
 
+    def update_all_dropdowns(self):
 
+        for table in self.tables:
+            table.create_maps()
+            table.dropdowns_init()
 
 
     def update_display(self):
@@ -868,6 +879,7 @@ class TableUI(Frame):
         self.set_filters()
         self.create_filtered_df()
         self.delete_and_replace()
+        self.update_all_dropdowns()
 
 
     def update_record(self):
