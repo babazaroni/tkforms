@@ -11,6 +11,7 @@ from custom import custom_dict
 import pandas as pd
 from tkinter import messagebox
 import ttkbootstrap as tb
+import pandas as pd
 
 import traceback
 import custom
@@ -121,7 +122,11 @@ class TableUI(Frame):
     def unique_fix(self,record_num):
         uniques = custom_dict["Tables"].get(self.table_name, {}).get('unique', [])
 
+        print("unique_fix:",self.table_name)
+
         for fields in uniques:
+
+            print("getting duplicates fields: ",fields)
 
             duplicates = self.df[fields][self.df[fields].duplicated()]
 
@@ -218,19 +223,79 @@ class TableUI(Frame):
         for heading in columns:
             self.my_tree.heading(heading, text=heading, anchor=W)
 
-
-    def get_converted_row(self,index,order_map,ref_row=None,skip_missing = False):
-
-        row = self.filtered_df.iloc[index].tolist()
+    def get_converted_row(self, index, order_map, ref_row=None, skip_missing=False): #xxx
+        row = self.filtered_df.iloc[index]
 
         values = []
         new_ref_row = []
 
         for f in order_map:
 
-            try:
-                o = self.filtered_df.columns.get_loc(f)
-            except:
+            if f not in self.filtered_df.columns and skip_missing:
+                continue
+
+            if f in self.field_maps.keys():
+                link = self.field_maps[f]
+                entry = row[link.source_fields].iloc[0] #convert from series
+            else:
+                #column_index = self.filtered_df.columns.get_loc(f)
+                #entry = row[column_index]
+                #dtype = str(self.filtered_df[self.filtered_df.columns[column_index]].dtypes)
+                entry = row[f]
+
+            if f in self.field_maps.keys():
+                link = self.field_maps[f]
+
+
+
+                entry = link.map_to.get(entry,entry)
+
+
+
+            if isinstance(entry, tuple):
+                entry = entry[0]
+
+            if entry is pd.NaT:
+                entry = ""
+
+            if isinstance(entry, pd.Timestamp):
+                entry = str(entry).split()[0]
+
+            new_ref_row.append(entry)
+
+            if ref_row:
+                if f in self.blank_rep:
+                    if entry == ref_row[len(values)]:
+                        entry = ""
+
+            #print("entry:",type(entry),entry)
+
+            values.append(entry)
+
+        return values,new_ref_row
+
+
+    def get_converted_row2(self,index,order_map,ref_row=None,skip_missing = False):
+
+        row = self.filtered_df.iloc[index].tolist()
+        print("get_converted_row row:",row)
+
+        values = []
+        new_ref_row = []
+
+        for f in order_map:
+
+            print("get_converted_row field:",f)
+
+            dtype = None
+
+            if f in self.filtered_df.columns:
+                column_index = self.filtered_df.columns.get_loc(f)
+                entry = row[column_index]
+                dtype = str(self.filtered_df[self.filtered_df.columns[column_index]].dtypes)
+
+            else:
+                print("get_converted_row missing:",f,skip_missing)
                 if not len(values):
                     print("missing field:",f)
                 if skip_missing:
@@ -238,7 +303,9 @@ class TableUI(Frame):
 
                 if f in self.field_maps.keys():
                     link = self.field_maps[f]
-                    #print("link info:",link.info_field)
+
+                    print(f"get_converted_row link({f}):",link)
+                    #map_to
                     o = self.filtered_df.columns.get_loc(link.info_field)
                 else:
                     values.append("error")
@@ -251,7 +318,7 @@ class TableUI(Frame):
                 link = self.field_maps[f]
                 entry = link.map_to.get(entry,entry)
 
-            if 'datetime' in str(self.filtered_df[self.filtered_df.columns[o]].dtypes):
+            if 'datetime' in dtype:
                 entry = str(entry).split()[0]
                 if entry == "NaT":
                     entry = ""
@@ -301,22 +368,27 @@ class TableUI(Frame):
                 return True
         return False
 
-    def create_maps(self): # linkxxx  creates map_to and map_from dictionary
+    def create_maps(self): #  creates map_to and map_from dictionary xxx
         links = custom_dict["Tables"].get(self.table_name, {}).get('links', [])
         for link in links:
             dest_df = glb.tables_dict[link.dest_table]
 
-            #print("create_maps link:")
-            #print(link)
+            #print("create_maps link table_name:",self.table_name)
+            #print("create_maps dest_table",link.dest_table)
+            #print("The link:",link)
+
+            match_column = list(dest_df[link.match_fields][::-1].itertuples(index=False, name=None))
+
+            match_column = [x[0] if len(x) == 1 else x for x in match_column]  # convert from tuple
 
             if link.flags is not None and custom.LINK_NUMERIC_AS_TEXT in link.flags:
-                match_column = dest_df[link.match_field].apply(str)[::-1]
-                print("convert to str:")
-            else:
-                match_column = dest_df[link.match_field][::-1]
+                match_column = [str(x) for x in match_column]
 
-            #print("match_column:")
+            #print("match_column:",type(match_column))
             #print(match_column)
+
+            #print("dest_df:")
+            #print(dest_df)
 
             dest_field_reversed = dest_df[link.dest_field][::-1]
 
@@ -325,23 +397,26 @@ class TableUI(Frame):
             link.map_to = dict(zip(match_column,dest_field_reversed))
             link.map_from = dict(zip(dest_field_reversed,match_column))
 
+            #print("the link:")
+            #print(link)
+
             #print("create_maps map_to:",link.map_to)
             #print("create_maps map_from:",link.map_from)
 
             #if link.dest_field == link.match_field:
             #    link.map_to[''] = ''  # allow blank
             #    link.map_from[''] = ''
-            self.field_maps[link.source_field] = link
+            self.field_maps[link.column_name] = link
 
         #print("exiting create_maps")
 
 
     def get_linked_entries(self,filter,unique_entries):
-        links = custom_dict["Tables"].get(self.table_name, {}).get('links', [])  #linkxxx  get_linked_entries
+        links = custom_dict["Tables"].get(self.table_name, {}).get('links', [])  #get_linked_entries
 
         for link in links:
 
-            if filter.field == link.source_field:
+            if filter.field == link.column_name:
 
                 corresponding_values = [link.map_to[key] for key in unique_entries if key in link.map_to]
 
@@ -541,9 +616,9 @@ class TableUI(Frame):
 
                 dropdown_list = list(link.map_from.keys())[::-1]  #reverse the list because it went in the dict reversed
 
-                print("setting dropdown:",column,dropdown_list)
+                #print("setting dropdown:",column,dropdown_list)
 
-                self.entries[x]['values'] = tuple(dropdown_list)  # linkxxx  create_controls dropdown values
+                self.entries[x]['values'] = tuple(dropdown_list)  #   create_controls dropdown values
 
             x += 1
 
@@ -663,7 +738,7 @@ class TableUI(Frame):
 
         focus = self.tree_focus()
 
-        self.selected_df_row = self.filtered_df.iloc[focus]  # linkxxx  select_record
+        self.selected_df_row = self.filtered_df.iloc[focus]
 
         order_map = get_order_map(self.table_name, self.filtered_df.columns)
         values,ref_row = self.get_converted_row(focus, order_map,skip_missing=True)
@@ -757,7 +832,7 @@ class TableUI(Frame):
         default_series = pd.Series({col: self.default_value(dtype) for col, dtype in self.filtered_df.dtypes.items()})
         return default_series.tolist()
 
-    def convert_record_to_df(self): # linkxxx convert record values to df values
+    def convert_record_to_df(self):
 
         order_map = get_order_map(self.table_name,self.df.columns,remove_alias= True)
 
@@ -820,7 +895,7 @@ class TableUI(Frame):
                 print("get_converted_row_values exception:",e)
                 print(traceback.print_exc())
                 #messagebox.showinfo("Notification",f"Invalid value for {column}.  Use dropdown values {code} {rval} {cval}")
-                messagebox.showinfo("Notification",f"Invalid value for {column}.  Use dropdown values.")
+                messagebox.showinfo("Notification",f"Invalid value for {column}.  Use dropdown values.{cval}")
                 return None
 
         return row_vals
@@ -895,7 +970,7 @@ class TableUI(Frame):
             return
 
 
-        row_vals = self.convert_record_to_df()  #linkxxx  update_record
+        row_vals = self.convert_record_to_df()
 
         if not row_vals:
             return

@@ -34,10 +34,11 @@ class NumSort():
         return True
 
 class Link():
-    def __init__(self,source_field,dest_table,match_field,dest_field,flags = None,info_field = None):
-        self.source_field = source_field
+    def __init__(self,column_name,source_fields,dest_table,match_fields,dest_field,flags = None,info_field = None):
+        self.column_name = column_name
+        self.source_fields = source_fields
         self.dest_table = dest_table
-        self.match_field = match_field
+        self.match_fields = match_fields
         self.dest_field = dest_field
         self.map_to = None
         self.map_from = None
@@ -45,7 +46,18 @@ class Link():
         self.info_field = info_field
 
     def __str__(self):
-        return f"source field: {self.source_field}\ndest_table:   {self.dest_table}\nmatch_field:  {self.match_field}\ndest_field:   {self.dest_field} \nflags:        {self.flags}"
+        s = "Link:\n"
+        s+= f"column_name({self.column_name})\n"
+        s+= f"source_fields({self.source_fields})\n"
+        s+= f"dest_table({self.dest_table})\n"
+        s+= f"match_fields({self.match_fields})\n"
+        s+= f"dest_field({self.dest_field})\n"
+        s+= f"map_to({self.map_to})\n"
+        s+= f"map_from({self.map_from})\n"
+        s+= f"flags({self.flags})\n"
+        s+= f"info_field({self.info_field})\n"
+
+        return s
 
 
 
@@ -54,22 +66,23 @@ class Link():
 
 custom_dict ={
     "TableOrder":["Project Data","Client ID","PM ID","Solas Architects","Solas Architect Rates","Fees","Dropdowns"],
-    "TableIgnore":["Financials"],
+    #"TableIgnore": ["Client ID", "PM ID", "Solas Architects", "Solas Architect Rates","Fees","Dropdowns"],
+    "TableIgnore": ["Financials"],
     "Tables":
         {"Project Data":
               { "order": ["Client ID","Project ID","Project Title","Completed %","Completed or Cancelled","Solas Primary"],
                 "filter": [ComboBoxC("Client ID"), ComboBoxC("Project ID"), ComboBoxC("Project Title"),ComboBoxC("Solas Primary")],
                 "sort_optional" : [DateSortC("Update Date")],
-                "links" :  [Link("Client ID","Client ID","ID","Clients"),
-                            Link("PM ID","PM ID","PM ID","Project Manager",[LINK_BLANK_ALLOWED,LINK_NUMERIC_AS_TEXT]),
-                            Link("Solas Primary","Solas Architects","Architects","Architects",[LINK_BLANK_ALLOWED]),
-                            Link("Solas 2nd","Solas Architects","Architects","Architects",[LINK_BLANK_ALLOWED]),
-                            Link("Current Stage", "Dropdowns", "Fee Phase", "Fee Phase", [LINK_ALLOW_CUSTOM_TEXT]),
-                            Link("Completed or Cancelled", "Dropdowns", "YesNo", "YesNo", [LINK_ALLOW_CUSTOM_TEXT]),
+                "links" :  [Link("Client ID",["Client ID"],"Client ID",["ID"],"Clients"),
+                            Link("PM ID",["PM ID"],"PM ID",["PM ID"],"Project Manager",[LINK_BLANK_ALLOWED,LINK_NUMERIC_AS_TEXT]),
+                            Link("Solas Primary",["Solas Primary"],"Solas Architects",["ArchitectsShort"],"ArchitectsShort",[LINK_BLANK_ALLOWED]),
+                            Link("Solas 2nd",["Solas 2nd"],"Solas Architects",["ArchitectsShort"],"ArchitectsShort",[LINK_BLANK_ALLOWED]),
+                            Link("Current Stage",["Current Stage"], "Dropdowns", ["Fee Phase"], "Fee Phase", [LINK_ALLOW_CUSTOM_TEXT]),
+                            Link("Completed or Cancelled", ["Completed or Cancelled"],"Dropdowns", ["YesNo"], "YesNo", [LINK_ALLOW_CUSTOM_TEXT]),
                             ],
                 "widths": {"Project Title": 300, "Client ID": 75,"PM ID":300,"Current Stage":300,"Notes":400},
                 "ignore": ["ID"],
-                "unique": [["ID"],["Client ID","Project ID"]],
+                "unique": [["Client ID","Project ID"]],
                 "width": 2200
                },
           "Client ID":
@@ -82,7 +95,7 @@ custom_dict ={
           "Financials":
               {"order": ["ID","Client ID","Project ID","Project Title","Task","Source","Description"],
                "filter": [ComboBoxC("Client ID"), ComboBoxC("Project ID"), ComboBoxC("Project Title"),ComboBoxC("Task")],
-               "links": [Link("Client ID", "Client ID", "ID", "Clients")],
+               "links": [Link("Client ID", ["Client ID"],"Client ID", ["ID"], "Clients")],
                #"sort": ["Client ID","Project ID","Project Title","Task","Source","Description"],
                "sort": [ "Client ID","Project ID","Project Title","Task","Source"],
                 "blank_rep": ["Client ID","Project ID","Project Title","Task","Source"],
@@ -94,7 +107,7 @@ custom_dict ={
               {
                 "order": [],
                "filter": [],
-                "links": [Link("Client ID", "Client ID", "ID", "Clients",[LINK_NUMERIC_AS_TEXT])],
+                "links": [Link("Client ID", ["Client ID"],"Client ID", ["ID"], "Clients",[LINK_NUMERIC_AS_TEXT])],
                 #"links": [Link("Client ID", "Client ID", "ID", "Clients")],
                "unique": [["PM ID"]],
                 "ignore": ["PM ID"],
@@ -106,7 +119,7 @@ custom_dict ={
               {"order": [],
                "filter": [ComboBoxC("Architect")],
                "sort_optional": [DateSortC("Rate Start Date")],
-               "links": [Link("Architect", "Solas Architects", "ID", "Architects")],
+               "links": [Link("Architect", ["Architect"],"Solas Architects", ["ID"], "Architects")],
                "unique": [["ID"]],
                "ignore": ["ID"],
                 "width": 1740
@@ -126,12 +139,12 @@ custom_dict ={
                  "filter": [ComboBoxC("Client ID"), ComboBoxC("Project ID")],
                  "ignore": ["ID"],
                  "unique": [["ID"]],
-                 "links": [Link("Client ID", "Client ID", "ID", "Clients"),
-                           Link("Project ID","Project Data","ID","Project ID"),
-                           Link("Project Title", "Project Data", "ID", "Project Title",info_field = "Project ID"),
-                           Link("Fee Phase", "Dropdowns", "Fee Phase", "Fee Phase", [LINK_ALLOW_CUSTOM_TEXT]),
-                           Link("Contract Signed", "Dropdowns", "YesNo", "YesNo", [LINK_ALLOW_CUSTOM_TEXT]),
-                           Link("Consultants","Dropdowns","Consultants","Consultants")],
+                 "links": [Link("Client ID", ["Client ID"],"Client ID", ["ID"], "Clients"),
+                           #Link("Project ID",["Project ID"],"Project Data",["ID"],"Project ID"),
+                           Link("Project Title", ["Client ID","Project ID"],"Project Data", ["Client ID","Project ID"], "Project Title",info_field = "Project Title"),
+                           Link("Fee Phase", ["Fee Phase"],"Dropdowns", ["Fee Phase"], "Fee Phase", [LINK_ALLOW_CUSTOM_TEXT]),
+                           Link("Contract Signed", ["Contract Signed"],"Dropdowns", ["YesNo"], "YesNo", [LINK_ALLOW_CUSTOM_TEXT]),
+                           Link("Consultants",["Consultants"],"Dropdowns",["Consultants"],"Consultants")],
                  "sort": ["Client ID", "Project ID", "Fee Phase"],
                  "blank_rep": ["Client ID", "Project ID", "Project Title", "Fee Phase"],
                 "widths": {"Project Title": 300,"Client ID":75,"Fee Phase":250,"Type":200},
