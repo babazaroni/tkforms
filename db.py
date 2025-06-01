@@ -12,6 +12,8 @@ import sqlalchemy as sa
 
 from sqlalchemy.orm import sessionmaker
 
+from custom import custom_dict
+
 
 
 if glb.ACCESS_PARSER:
@@ -71,6 +73,9 @@ def process_db(db_path):
 
             table = glb.db.get_table(table_name)
 
+            for column in table.columns:
+                print(f"process_db {column}:{column.datatype}")
+
             #print("count of nans:")
             #print(table.isna().sum())
             table.fillna('',inplace=True)
@@ -117,18 +122,37 @@ def process_db(db_path):
         inspector = inspect(glb.engine)
 
         # Get list of tables
-        tables = inspector.get_table_names()
+        table_names = inspector.get_table_names()
 
         glb.tables_dict = {}
 
        #print("Tables in the Access database:")
-        for table in tables:
-            df = pd.read_sql_table(table, con=glb.engine)
-            df.fillna('',inplace=True)
-            glb.tables_dict[table] = df
+        for table_name in table_names:
+            df = read_df(table_name)
+
+            #df = df.convert_dtypes()
+            #df.fillna('',inplace=True)  #xxx
+
+            #print("setting glb.tables_dict:",table_name,df)
+            glb.tables_dict[table_name] = df
             #glb.tables_dict[table] = None
 
 
+def read_df(table_name):
+    #print("read_df:",table_name)
+    df = pd.read_sql_table(table_name, con=glb.engine, coerce_float=True)
+
+    force_calls = custom_dict["Tables"][table_name].get("force_numeric", [])
+    for col in force_calls:
+        #print("forcing:", col)
+        try:
+            df[col] = pd.to_numeric(df[col], errors='raise')
+        except:
+            print(f"Unable to force field {col} in table {table_name} to numeric")
+            pass
+
+    #print("after forcing:", df.dtypes)
+    return df
 
 
 def create_df_sql(sql,conn,table_name):

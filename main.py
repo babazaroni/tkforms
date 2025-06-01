@@ -57,7 +57,7 @@ def prompt_for_db():
     if isinstance(file_path,str):
         print("file_path:",file_path)
         #try:
-        process_db(file_path)
+        process_db(file_path) #xxx
         file_path_project["text"] = file_path
 
 
@@ -135,9 +135,9 @@ def on_tab_changed(event):
     table = tab_table_map[widget_in_selected_tab]
 
     x = table.master_frame.winfo_height()
-    print("height:",x)
-    print("pos: y",table.master_frame.winfo_y())
-    print("pos: x",table.master_frame.winfo_x())
+    #print("height:",x)
+    #print("pos: y",table.master_frame.winfo_y())
+    #print("pos: x",table.master_frame.winfo_x())
 
     root.geometry(f"{max(table.width+100,1000)}x1100")
 

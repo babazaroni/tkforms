@@ -70,20 +70,21 @@ custom_dict ={
     "TableIgnore": ["Financials"],
     "Tables":
         {"Project Data":
-              { "order": ["Client ID","Project ID","Project Title","Completed %","Completed or Cancelled","Solas Primary"],
+              { "order": ["Client ID","Project ID","Project Title","Completed %","Completed or Cancelled","Solas Primary","Solas 2nd"],
                 "filter": [ComboBoxC("Client ID"), ComboBoxC("Project ID"), ComboBoxC("Project Title"),ComboBoxC("Solas Primary")],
                 "sort_optional" : [DateSortC("Update Date")],
                 "links" :  [Link("Client ID",["Client ID"],"Client ID",["ID"],"Clients"),
-                            Link("PM ID",["PM ID"],"PM ID",["PM ID"],"Project Manager",[LINK_BLANK_ALLOWED,LINK_NUMERIC_AS_TEXT]),
-                            Link("Solas Primary",["Solas Primary"],"Solas Architects",["ArchitectsShort"],"ArchitectsShort",[LINK_BLANK_ALLOWED]),
-                            Link("Solas 2nd",["Solas 2nd"],"Solas Architects",["ArchitectsShort"],"ArchitectsShort",[LINK_BLANK_ALLOWED]),
+                            Link("PM ID", ["PM ID"], "PM ID", ["PM ID"], "Project Manager"),
+                            Link("Solas Primary", ["Solas Primary"], "Solas Architects", ["ID"],"ArchitectsShort", [LINK_BLANK_ALLOWED]),
+                            Link("Solas 2nd", ["Solas 2nd"], "Solas Architects", ["ID"], "ArchitectsShort",[LINK_BLANK_ALLOWED]),
                             Link("Current Stage",["Current Stage"], "Dropdowns", ["Fee Phase"], "Fee Phase", [LINK_ALLOW_CUSTOM_TEXT]),
                             Link("Completed or Cancelled", ["Completed or Cancelled"],"Dropdowns", ["YesNo"], "YesNo", [LINK_ALLOW_CUSTOM_TEXT]),
                             ],
                 "widths": {"Project Title": 300, "Client ID": 75,"PM ID":300,"Current Stage":300,"Notes":400},
                 "ignore": ["ID"],
                 "unique": [["Client ID","Project ID"]],
-                "width": 2200
+                "width": 2200,
+                "force_numeric": ["Solas Primary","Solas 2nd"],
                },
           "Client ID":
                         {"widths": {"ID":50,"Clients":200},

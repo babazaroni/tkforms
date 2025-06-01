@@ -3,6 +3,7 @@ from tkinter import *
 from tkinter import ttk
 from tkinter.ttk import Combobox
 
+import numpy as np
 from sqlalchemy.sql.sqltypes import NULLTYPE
 
 #from commands import *
@@ -15,6 +16,7 @@ import pandas as pd
 
 import traceback
 import custom
+from db import read_df
 
 ##rom main import tab_table_map  # this causes circular problems
 
@@ -42,6 +44,8 @@ class TableUI(Frame):
         self.field_maps = {}
 
         self.df = glb.tables_dict[table_name]
+        #print("TableUI self.df:",table_name,self.df)
+        #print("TableUI: dtypes",self.df.dtypes)
         #self.df = None
         #self.refresh_df()
 
@@ -113,6 +117,28 @@ class TableUI(Frame):
         self.reqwidth = 0
         self.filtered_df = self.df.copy()
 
+        #print("before convert_fields dtypes:",self.df.dtypes)
+        #self.convert_fields()
+        #print("after convert_fields dtypes:",self.df.dtypes)
+
+    def convert_fields(self):
+
+        force_numeric = self.custom.get("force_numeric", [])
+        for col in force_numeric:
+            try:
+                self.df[col] = pd.to_numeric(self.df[col], errors='raise')
+            except:
+                print(f"Unable to force field {col} in table {self.table_name} to numeric")
+                pass
+
+#        for col in df.select_dtypes(include='object').columns:
+#            try:
+#                df[col] = pd.to_numeric(df[col], errors='raise')
+#                print(f"Converted '{col}' to numeric")
+#            except:
+#                pass
+#        pass
+
     def on_scroll(self):
         print("scrolled")
 
@@ -122,15 +148,15 @@ class TableUI(Frame):
     def unique_fix(self,record_num):
         uniques = custom_dict["Tables"].get(self.table_name, {}).get('unique', [])
 
-        print("unique_fix:",self.table_name)
+        #print("unique_fix:",self.table_name)
 
         for fields in uniques:
 
-            print("getting duplicates fields: ",fields)
+            #print("getting duplicates fields: ",fields)
 
             duplicates = self.df[fields][self.df[fields].duplicated()]
 
-            print("unique_fix duplicates",duplicates)
+            #print("unique_fix duplicates",duplicates)
 
             if duplicates.empty:
                 continue
@@ -149,19 +175,26 @@ class TableUI(Frame):
             else:
                 #if pd.api.types.is_string_dtype(self.df[field]):
 
-                    s = duplicates.iloc[0]
+                    print("duplicates type:",type(duplicates))
+
+                    #s = duplicates.iloc[0]
+
+                    print("duplicates:")
+                    print(duplicates)
 
                     links = custom_dict["Tables"].get(self.table_name, {}).get('links', [])
 
                     duplicate_msg = ''
-                    for idx, val in s.items():
-                        for link in links:
-                            if idx == link.source_field:
-                                val = link.map_to[val]
-                        duplicate_msg += f"{idx}={val} "
+                    idx,val = next(duplicates.items())
+
+                    for link in links:
+                        if idx == link.source_fields:
+                            val = link.map_to[val]
+                    duplicate_msg += f"{idx}={val} "
 
 
                     messagebox.showinfo("Notification",f"Multiple entries for {duplicate_msg}")
+                    4/0
                     return False
 
         return True
@@ -170,11 +203,11 @@ class TableUI(Frame):
 
     def refresh_df(self):
         if glb.ALCHEMY:
-            self.df = pd.read_sql_table(self.table_name, con=glb.engine)
+            self.df = read_df(self.table_name)
         else:
             self.df = pd.read_sql(f"select * from [{self.table_name}]", glb.cnn)
 
-        self.df.fillna('', inplace=True)
+        #self.df.fillna('', inplace=True)
         glb.tables_dict[self.table_name] = self.df
 
     def save_df(self):
@@ -224,6 +257,9 @@ class TableUI(Frame):
             self.my_tree.heading(heading, text=heading, anchor=W)
 
     def get_converted_row(self, index, order_map, ref_row=None, skip_missing=False): #xxx
+
+
+        #print("get_converted_row db datatypes:",self.filtered_df.dtypes)
         row = self.filtered_df.iloc[index]
 
         values = []
@@ -260,6 +296,9 @@ class TableUI(Frame):
 
             if isinstance(entry, pd.Timestamp):
                 entry = str(entry).split()[0]
+
+            if pd.isna((entry)):
+                entry = ""
 
             new_ref_row.append(entry)
 
@@ -689,7 +728,9 @@ class TableUI(Frame):
         return first_visible_index
 
     def search_selected_record(self):
+
         sd = self.selected_df_row.to_dict()
+
 
         formatted_strings = []
 
@@ -703,14 +744,27 @@ class TableUI(Frame):
             x = x+1
 
             if isinstance(value, str):
-                formatted_strings.append(f"`{key}` == \"{value}\"");continue
-            if isinstance(value,pd.Timestamp):
+                formatted_strings.append(f"`{key}` == \"{value}\"")
+            elif isinstance(value,pd.Timestamp):
                 #formatted_strings.append(f"`{key}` == '{value}'");continue
-                formatted_strings.append(f"`{key}` == @pd.Timestamp('{value}')");continue
-            if pd.isna(value):
-                formatted_strings.append(f"`{key}`.isna()");continue
+                formatted_strings.append(f"`{key}` == @pd.Timestamp('{value}')")
+            elif pd.isna(value):
+                #formatted_strings.append(f"`{key}`.isna()")
+                formatted_strings.append(f"'{key}' != '{key}'")  #chatgpt says this will work for nans
+            else:
+                formatted_strings.append(f"`{key}` == {value}")
 
-            formatted_strings.append(f"`{key}` == {value}")
+            #formatted_string = ' & '.join(formatted_strings)
+            #print("searching with:",formatted_string)
+            #row_exists = self.df.query(formatted_string)
+            #if row_exists.empty:
+            #    print("Selected record partial ssearch:",formatted_strings)
+            #    return None
+            #print("partial search row exists")
+            #with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+            #    print(row_exists)
+
+
 
         formatted_string = ' & '.join(formatted_strings)
         #print("formatted_string: ",formatted_string)
@@ -796,7 +850,12 @@ class TableUI(Frame):
 
         #print("type",type(column_dtype))
         if column_dtype == 'float64':
-            converted_value = float(new_value)
+            try:
+                #print("convert_by_dtype float try",new_value)
+                converted_value = float(new_value)
+                #print("convert_by_dtype float susccess:",converted_value)
+            except:
+                converted_value = np.nan
             #print("its float64")
         else:
             series = pd.Series([new_value])
@@ -817,7 +876,7 @@ class TableUI(Frame):
         if pd.api.types.is_integer_dtype(dtype):
             return 0
         elif pd.api.types.is_float_dtype(dtype):
-            return 0.0
+            return np.nan
         elif pd.api.types.is_bool_dtype(dtype):
             return False
         elif pd.api.types.is_datetime64_any_dtype(dtype):
@@ -830,9 +889,10 @@ class TableUI(Frame):
 
     def create_default_row(self):
         default_series = pd.Series({col: self.default_value(dtype) for col, dtype in self.filtered_df.dtypes.items()})
+        #print("default_series:",default_series,"\n")
         return default_series.tolist()
 
-    def convert_record_to_df(self):
+    def convert_record_to_df(self): #xxx
 
         order_map = get_order_map(self.table_name,self.df.columns,remove_alias= True)
 
@@ -845,14 +905,13 @@ class TableUI(Frame):
 
         for record,column in zip(self.records,order_map):
 
-            code = 0
             try:
                 rval = record.entry.get() if 'DateEntry' in str(type(record)) else record.get()
+
 
                 #print("record,column:", rval, column)
 
                 if column in self.field_maps.keys():
-                    code = 1
                     link = self.field_maps[column]
                     if link.info_field is not None:
                         continue
@@ -862,34 +921,26 @@ class TableUI(Frame):
                     if link.flags:
 
                         if isinstance(rval,str):
-                            code = 2
 
                             if  (rval == '' or rval.isspace()) and custom.LINK_BLANK_ALLOWED in link.flags:
                                 rval = ''
                             else:
-                                code = 3
                                 if custom.LINK_NUMERIC_AS_TEXT in link.flags:
-                                    code = 4
                                     #rval = float(rval)
                                     #rval = link.map_from[int(rval)]
                                     rval = link.map_from[rval]
                                 else:
-                                    code = 5
                                     if custom.LINK_ALLOW_CUSTOM_TEXT not in link.flags:
                                         rval = link.map_from[rval]
                         else:
-                            code = 6
                             rval = link.map_from[rval]
                     else:
-                        code = 7
                         #print("map_from:",rval,link.map_from)
                         rval = link.map_from[rval]
-                else:
-                    code = 8
 
                 cval = self.convert_by_dtype(rval, self.df[column].dtype)
-                #print(f"df[{column}.dtype:",self.df[column].dtype)
-                #print(f"row_vals[{order}] = {cval}")
+                #print(f"crtdf df[{column}.dtype:",self.df[column].dtype)
+                #print(f"crtdf row_vals[{column}] = {cval}")
                 row_vals[self.df.columns.get_loc(column)] = cval
             except Exception as e:
                 print("get_converted_row_values exception:",e)
@@ -959,14 +1010,18 @@ class TableUI(Frame):
 
     def update_record(self):
 
+        #print("update_record1 dtypes",self.df.dtypes)  #xxx
+
         if self.record_check() is None:
             return
 
         self.refresh_df()
         record_num = self.search_selected_record()
 
+        #print("update_record2 dtypes",self.df.dtypes)
+
         if record_num is None:
-            messagebox.showinfo("Notification", "Cannot find entry")
+            messagebox.showinfo("Notification", "Cannot find entry.")
             return
 
 
@@ -974,6 +1029,8 @@ class TableUI(Frame):
 
         if not row_vals:
             return
+
+        #print("update_record3 dtypes",self.df.dtypes)  #xxx
 
         last_row_vals = self.df.iloc[record_num]
 
