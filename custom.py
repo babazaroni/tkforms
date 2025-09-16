@@ -66,7 +66,7 @@ class Link():
 
 custom_dict ={
     "TableOrder":["Project Data","Client ID","PM ID","Solas Architects","Solas Architect Rates","Fees","Dropdowns"],
-    #"TableIgnore": ["Client ID", "PM ID", "Solas Architects", "Solas Architect Rates","Fees","Dropdowns"],
+    #"TableIgnore": ["Client ID","PM ID","Solas Architects","Solas Architect Rates","Dropdowns","Financials","Fees"],
     "TableIgnore": ["Financials"],
     "Tables":
         {"Project Data":
@@ -74,6 +74,7 @@ custom_dict ={
                 "filter": [ComboBoxC("Client ID"), ComboBoxC("Project ID"), ComboBoxC("Project Title"),ComboBoxC("Solas Primary")],
                 "sort_optional" : [DateSortC("Update Date")],
                 "links" :  [Link("Client ID",["Client ID"],"Client ID",["ID"],"Clients"),
+                            Link("Project ID", ["Project ID"], "Project Data", ["Project ID"], "Project ID"),
                             Link("PM ID", ["PM ID"], "PM ID", ["PM ID"], "Project Manager"),
                             Link("Solas Primary", ["Solas Primary"], "Solas Architects", ["ID"],"ArchitectsShort", [LINK_BLANK_ALLOWED]),
                             Link("Solas 2nd", ["Solas 2nd"], "Solas Architects", ["ID"], "ArchitectsShort",[LINK_BLANK_ALLOWED]),
@@ -85,6 +86,7 @@ custom_dict ={
                 "unique": [["Client ID","Project ID"]],
                 "width": 2200,
                 "force_numeric": ["Solas Primary","Solas 2nd"],
+                "blank_rep": ["Client ID", "Project ID", "Project Title"],
                },
           "Client ID":
                         {"widths": {"ID":50,"Clients":200},
@@ -114,7 +116,8 @@ custom_dict ={
                 "ignore": ["PM ID"],
                 "widths": {"PM ID": 70,"Project Manager":300,"Email":400,"Cell Num":170,"Alternate Phone Num":170},
                 "sort":["PM ID"],
-                "width": 2300
+                "width": 2300,
+                  "blank_rep": ["Client ID"],
                },
           "Solas Architect Rates":
               {"order": [],
@@ -141,14 +144,16 @@ custom_dict ={
                  "ignore": ["ID"],
                  "unique": [["ID"]],
                  "links": [Link("Client ID", ["Client ID"],"Client ID", ["ID"], "Clients"),
-                           #Link("Project ID",["Project ID"],"Project Data",["ID"],"Project ID"),
+                        Link("Project ID", ["Project ID"], "Project Data", ["Project ID"], "Project ID"),
+                           #Link("Project ID",["Client ID"],"Project Data",["Client ID"],"Project ID"),
                            Link("Project Title", ["Client ID","Project ID"],"Project Data", ["Client ID","Project ID"], "Project Title",info_field = "Project Title"),
                            Link("Fee Phase", ["Fee Phase"],"Dropdowns", ["Fee Phase"], "Fee Phase", [LINK_ALLOW_CUSTOM_TEXT]),
                            Link("Contract Signed", ["Contract Signed"],"Dropdowns", ["YesNo"], "YesNo", [LINK_ALLOW_CUSTOM_TEXT]),
-                           Link("Consultants",["Consultants"],"Dropdowns",["Consultants"],"Consultants")],
+                           Link("Consultants",["Consultants"],"Dropdowns",["Consultants"],"Consultants",[LINK_ALLOW_CUSTOM_TEXT])],
                  "sort": ["Client ID", "Project ID", "Fee Phase"],
                  "blank_rep": ["Client ID", "Project ID", "Project Title", "Fee Phase"],
                 "widths": {"Project Title": 300,"Client ID":75,"Fee Phase":250,"Type":200},
+                 "blank_rep": ["Client ID", "Project ID", "Project Title","Fee Phase"],
               "width": 2200
               },
          "Dropdowns":

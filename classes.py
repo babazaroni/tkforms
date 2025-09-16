@@ -4,11 +4,12 @@ from tkinter import ttk
 from tkinter.ttk import Combobox
 
 import numpy as np
+import math
 from sqlalchemy.sql.sqltypes import NULLTYPE
 
 #from commands import *
 from colors import *
-from custom import custom_dict
+from custom import custom_dict,LINK_ALLOW_CUSTOM_TEXT
 import pandas as pd
 from tkinter import messagebox
 import ttkbootstrap as tb
@@ -17,6 +18,7 @@ import pandas as pd
 import traceback
 import custom
 from db import read_df
+
 
 ##rom main import tab_table_map  # this causes circular problems
 
@@ -106,7 +108,7 @@ class TableUI(Frame):
 
         self.update_button = Button(self.button_frame, text="Update Record", command=self.update_record)
         #self.update_button.pack()
-        self.add_button = Button(self.button_frame, text="Add Record", command=self.append_record_to_df)
+        self.add_button = Button(self.button_frame, text="Add Record", command=self.append_record_to_df) #xxx
         self.remove_one_button = Button(self.button_frame, text="Remove Record", command=self.remove_one)
         self.select_record_button = Button(self.button_frame, text="Clear Record", command=self.clear_entries)
 
@@ -256,33 +258,55 @@ class TableUI(Frame):
         for heading in columns:
             self.my_tree.heading(heading, text=heading, anchor=W)
 
-    def get_converted_row(self, index, order_map, ref_row=None, skip_missing=False): #xxx
+    def convert_df_to_row(self, index, order_map, ref_row=None, skip_missing=False): #xxx
 
 
         #print("get_converted_row db datatypes:",self.filtered_df.dtypes)
         row = self.filtered_df.iloc[index]
+        #print("convert_df_to_row row:",row)
 
         values = []
         new_ref_row = []
 
         for f in order_map:
+            #print("convert_df_to_row f",f)
 
             if f not in self.filtered_df.columns and skip_missing:
                 continue
 
             if f in self.field_maps.keys():
                 link = self.field_maps[f]
-                entry = row[link.source_fields].iloc[0] #convert from series
+                #print("convert_df_to_row f link:",f,link)
+
+                if len(link.source_fields) == 1:
+                    key = row[link.source_fields[0]]
+                else:
+                    #print("more than 1",len(link.source_fields),type(row),link.source_fields)
+                    key = tuple(row.loc[link.source_fields])
+
+                #print("key is:",type(key),key)
+                #print("flags is:",link.flags)
+
+                if link.flags and LINK_ALLOW_CUSTOM_TEXT in link.flags:
+                    entry = key
+                else:
+                    try:
+                        entry = link.map_to[key]
+                    except:
+                        if isinstance(key,float) and math.isnan(key):
+                            entry = ""
+                        else:
+                            entry = f"e({key})"
+                        #entry = f"err"
+
+                #print("is this it:",entry)
+
+                #print("entry:",entry)
             else:
-                #column_index = self.filtered_df.columns.get_loc(f)
-                #entry = row[column_index]
-                #dtype = str(self.filtered_df[self.filtered_df.columns[column_index]].dtypes)
                 entry = row[f]
 
             if f in self.field_maps.keys():
                 link = self.field_maps[f]
-
-
 
                 entry = link.map_to.get(entry,entry)
 
@@ -311,67 +335,10 @@ class TableUI(Frame):
 
             values.append(entry)
 
-        return values,new_ref_row
-
-
-    def get_converted_row2(self,index,order_map,ref_row=None,skip_missing = False):
-
-        row = self.filtered_df.iloc[index].tolist()
-        print("get_converted_row row:",row)
-
-        values = []
-        new_ref_row = []
-
-        for f in order_map:
-
-            print("get_converted_row field:",f)
-
-            dtype = None
-
-            if f in self.filtered_df.columns:
-                column_index = self.filtered_df.columns.get_loc(f)
-                entry = row[column_index]
-                dtype = str(self.filtered_df[self.filtered_df.columns[column_index]].dtypes)
-
-            else:
-                print("get_converted_row missing:",f,skip_missing)
-                if not len(values):
-                    print("missing field:",f)
-                if skip_missing:
-                    continue
-
-                if f in self.field_maps.keys():
-                    link = self.field_maps[f]
-
-                    print(f"get_converted_row link({f}):",link)
-                    #map_to
-                    o = self.filtered_df.columns.get_loc(link.info_field)
-                else:
-                    values.append("error")
-                    continue
-
-            entry = row[o]
-
-            if f in self.field_maps.keys():
-
-                link = self.field_maps[f]
-                entry = link.map_to.get(entry,entry)
-
-            if 'datetime' in dtype:
-                entry = str(entry).split()[0]
-                if entry == "NaT":
-                    entry = ""
-
-            new_ref_row.append(entry)
-
-            if ref_row:
-                if f in self.blank_rep:
-                    if entry == ref_row[len(values)]:
-                        entry = ""
-
-            values.append(entry)
+        #print("get converted row:",values)
 
         return values,new_ref_row
+
 
 
     def set_tree_body_df(self):
@@ -384,9 +351,12 @@ class TableUI(Frame):
         values = None
         ref_row = None
 
+        print("table:",self.table_name)
+
         for index in range(0, len(self.filtered_df)):
 
-            values,ref_row = self.get_converted_row(index,order_map,ref_row = ref_row)
+            values,ref_row = self.convert_df_to_row(index,order_map,ref_row = ref_row)
+            print("set_tree_body_df:",values)
 
             tp = tuple(values)
 
@@ -407,7 +377,7 @@ class TableUI(Frame):
                 return True
         return False
 
-    def create_maps(self): #  creates map_to and map_from dictionary xxx
+    def create_maps(self):
         links = custom_dict["Tables"].get(self.table_name, {}).get('links', [])
         for link in links:
             dest_df = glb.tables_dict[link.dest_table]
@@ -418,7 +388,11 @@ class TableUI(Frame):
 
             match_column = list(dest_df[link.match_fields][::-1].itertuples(index=False, name=None))
 
+            #print("Maatch_column",match_column)
+
             match_column = [x[0] if len(x) == 1 else x for x in match_column]  # convert from tuple
+
+            #print("Maatch_column from tuple",match_column)
 
             if link.flags is not None and custom.LINK_NUMERIC_AS_TEXT in link.flags:
                 match_column = [str(x) for x in match_column]
@@ -473,13 +447,15 @@ class TableUI(Frame):
                 #print("set_filters",self.filtered_df[filter.field])
 
                 #print("self.filtered:",self.filtered_df[filter.field])
-                #print("filtered_df:",filter.field)
+                print("filtered_df:",filter.field)
                 unique_entries = sorted(self.filtered_df[filter.field].unique())
+
+                print("set_filters unique_entries:",unique_entries)
 
                 unique_entries = self.get_linked_entries(filter,unique_entries)
 
 
-                #print("unique:",unique_entries)
+                print("set_filters unique:",unique_entries)
                 filter.control['values'] = tuple(unique_entries)
 
     def sort_filtered_df_optional(self):
@@ -655,6 +631,8 @@ class TableUI(Frame):
 
                 dropdown_list = list(link.map_from.keys())[::-1]  #reverse the list because it went in the dict reversed
 
+                dropdown_list = sorted(dropdown_list)  # going to sort everything here.  If you want selective sorting, then add a flag to the link flags field, then check here.
+
                 #print("setting dropdown:",column,dropdown_list)
 
                 self.entries[x]['values'] = tuple(dropdown_list)  #   create_controls dropdown values
@@ -795,7 +773,7 @@ class TableUI(Frame):
         self.selected_df_row = self.filtered_df.iloc[focus]
 
         order_map = get_order_map(self.table_name, self.filtered_df.columns)
-        values,ref_row = self.get_converted_row(focus, order_map,skip_missing=True)
+        values,ref_row = self.convert_df_to_row(focus, order_map,skip_missing=True)
 
         for i,record in enumerate(self.records):
             record.insert(0,values[i])
@@ -896,6 +874,8 @@ class TableUI(Frame):
 
         order_map = get_order_map(self.table_name,self.df.columns,remove_alias= True)
 
+        print("convert_record_to_df:",order_map)
+
         #row_vals = self.selected_df_row.tolist()
 
         row_vals = self.create_default_row()
@@ -905,9 +885,12 @@ class TableUI(Frame):
 
         for record,column in zip(self.records,order_map):
 
+            #print("for record,column:",record,column)
+
             try:
                 rval = record.entry.get() if 'DateEntry' in str(type(record)) else record.get()
 
+                #print("rval:",rval)
 
                 #print("record,column:", rval, column)
 
@@ -970,7 +953,7 @@ class TableUI(Frame):
 
         self.refresh_df()
 
-        df_row_vals = self.convert_record_to_df()
+        df_row_vals = self.convert_record_to_df() #xxx
 
         print("append_record_to_df:",df_row_vals)
 
@@ -1124,13 +1107,14 @@ def get_order_map(table,keys,remove_alias = False):
         if remove_alias:
             for link in custom_dict["Tables"][table].get("links", []):
                 if link.info_field:
-                    new_map.remove(link.source_field)
+                    print("new_map remove",link.column_name,new_map)
+                    new_map.remove(link.column_name)
 
         #print("get_order_map:",table,new_map)
 
         return new_map
 
-    except:
-        print("---------- get order map error --------",table)
+    except Exception as e:
+        print("---------- get order map error --------",table,e)
         return default_map
 
