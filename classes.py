@@ -356,7 +356,7 @@ class TableUI(Frame):
         for index in range(0, len(self.filtered_df)):
 
             values,ref_row = self.convert_df_to_row(index,order_map,ref_row = ref_row)
-            print("set_tree_body_df:",values)
+            #print("set_tree_body_df:",values)
 
             tp = tuple(values)
 
@@ -464,8 +464,10 @@ class TableUI(Frame):
             if sorter.ivar.get():
                 self.filtered_df = self.filtered_df.sort_values(by=sorter.field)
 
-    def sort_filtered_df(self):
-        self.filtered_df = self.filtered_df.sort_values(by=self.sort)
+    def filtered_sort_df(self):
+        #self.filtered_df = self.filtered_df.sort_values(by=self.sort)
+        self.filtered_df = self.filtered_df.sort_values(self.sort)
+        pass
 
     def create_filtered_df(self):
         #print("create_filtered_df")
@@ -488,7 +490,7 @@ class TableUI(Frame):
 
         self.sort_filtered_df_optional()
 
-        self.sort_filtered_df()
+        self.filtered_sort_df()
 
         #print("create_filtered_df end:",len(self.filtered_df))
 
