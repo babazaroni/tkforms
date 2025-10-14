@@ -23,7 +23,7 @@ def set_tablex(table):
     global content_dict
     print("set_table:",table)
 
-    #for item in content_frame.winfo_children():
+    #for item in content_frame.winfo_children():zzz
     #    item.destroy()
 
     content_dict[table].pack()
